@@ -5,6 +5,14 @@ server:
 spring:
   application:
     name: backend
+  mail:
+    host: localhost
+    port: 25
+    username: ""
+    password: ""
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
 
 # PingTower Scheduler Configuration
 pingtower:
@@ -18,4 +26,3 @@ pingtower:
     retry-delay-seconds: 30
     default-timeout-seconds: 30
     auto-start: true
-
