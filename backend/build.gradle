@@ -25,6 +25,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    // WebClient for HTTP-based providers (Telegram/Webhook)
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    // JavaMail for SMTP email provider
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
     
     runtimeOnly 'org.postgresql:postgresql'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
