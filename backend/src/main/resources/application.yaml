@@ -1,0 +1,21 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /v1
+spring:
+  application:
+    name: backend
+
+# PingTower Scheduler Configuration
+pingtower:
+  scheduler:
+    instance-name: PingTowerScheduler
+    thread-count: 10
+    clustered: false
+    cluster-checkin-interval: 20000
+    misfire-threshold: 60000
+    max-retry-attempts: 3
+    retry-delay-seconds: 30
+    default-timeout-seconds: 30
+    auto-start: true
+

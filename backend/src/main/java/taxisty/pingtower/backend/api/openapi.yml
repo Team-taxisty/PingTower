@@ -1,0 +1,209 @@
+openapi: 3.1.0
+info:
+  title: Pingtower Monitoring API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/v1
+paths:
+  /checks:
+    get:
+      summary: List checks
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50, maximum: 500 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Check' }
+                  next_cursor:
+                    type: string
+                    nullable: true
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalError' }
+    post:
+      summary: Create check
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CheckCreate' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Check' }
+        '200':
+          description: Idempotent replay (resource already exists)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Check' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /checks/{id}:
+    get:
+      summary: Get check by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Check' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalError' }
+    patch:
+      summary: Update check (partial)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CheckPatch' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Check' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalError' }
+    delete:
+      summary: Delete check
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: No Content }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /runs:
+    get:
+      summary: List runs
+      parameters:
+        - in: query
+          name: check_id
+          schema: { type: string }
+        - in: query
+          name: from
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          schema: { type: string, format: date-time }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 1000, maximum: 10000 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Run' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+components:
+  schemas:
+    Check:
+      type: object
+      required: [id, name, type, target, enabled, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, maxLength: 100 }
+        type: { type: string, enum: [HTTP, HTTPS, API_JSON, API_XML] }
+        target: { type: string }
+        interval_sec: { type: integer, minimum: 1 }
+        enabled: { type: boolean }
+        created_at: { type: string, format: date-time }
+    CheckCreate:
+      type: object
+      required: [name, type, target]
+      properties:
+        name: { type: string }
+        type: { type: string, enum: [HTTP, HTTPS, API_JSON, API_XML] }
+        target: { type: string }
+        interval_sec: { type: integer, minimum: 1, default: 60 }
+    CheckPatch:
+      type: object
+      properties:
+        name: { type: string }
+        target: { type: string }
+        interval_sec: { type: integer, minimum: 1 }
+        enabled: { type: boolean }
+    Run:
+      type: object
+      required: [id, check_id, started_at, latency_ms, status]
+      properties:
+        id: { type: string, format: uuid }
+        check_id: { type: string, format: uuid }
+        started_at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time }
+        latency_ms: { type: integer }
+        status: { type: string, enum: [UP, DOWN, DEGRADED] }
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details:
+          type: object
+          additionalProperties: true
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    InternalError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
