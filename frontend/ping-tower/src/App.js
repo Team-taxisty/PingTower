@@ -10,8 +10,10 @@ import ServiceDetail from './pages/ServiceDetail';
 import Alerts from './pages/Alerts';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Auth from './pages/Auth';
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [selectedService, setSelectedService] = useState(null);
   const [services, setServices] = useState(() => [
@@ -74,6 +76,11 @@ function App() {
 
   function handleBackToDashboard() {
     setSelectedService(null);
+    setCurrentPage('dashboard');
+  }
+
+  function handleAuthSuccess() {
+    setIsLoggedIn(true);
     setCurrentPage('dashboard');
   }
 
@@ -140,6 +147,10 @@ function App() {
       default:
         return null;
     }
+  }
+
+  if (!isLoggedIn) {
+    return <Auth onAuthSuccess={handleAuthSuccess} />;
   }
 
   return (

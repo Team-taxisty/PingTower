@@ -48,7 +48,8 @@ function Navigation({ currentPage, onNavigate }) {
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'alerts', label: 'Уведомления' },
     { id: 'reports', label: 'Отчёты' },
-    { id: 'settings', label: 'Настройки' }
+    { id: 'settings', label: 'Настройки' },
+    { id: 'auth', label: 'Авторизация' }
   ];
 
   return (
