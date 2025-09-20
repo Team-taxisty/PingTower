@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import api from '../utils/api';
 
-function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from ServiceDetail and service prop
+function CheckDetail({ check, onEdit, onDelete, onBack }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [runsData, setRunsData] = useState([]);
   const [isLoadingRuns, setIsLoadingRuns] = useState(true);
@@ -14,6 +14,7 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
         try {
           const now = new Date();
           const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          // Используем check.id как serviceId для запроса runs
           const response = await api(`/v1/api/runs?check_id=${check.id}&from=${twentyFourHoursAgo.toISOString()}&to=${now.toISOString()}`);
           if (response.ok) {
             const data = await response.json();
@@ -34,11 +35,11 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
   }, [check?.id]);
 
   const processedRunsData = useMemo(() => {
-    // Process raw run data for charts
     return runsData.map(run => ({
       time: new Date(run.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       responseTime: run.latency_ms,
-      uptime: run.status === 'UP' ? 100 : (run.status === 'DEGRADED' ? 50 : 0), // Map status to uptime % for chart
+
+      uptime: run.status === 'UP' ? 100 : 0,
     }));
   }, [runsData]);
 
@@ -54,21 +55,17 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
     return ((upRuns / runsData.length) * 100).toFixed(2);
   }, [runsData]);
 
-  const incidents = useMemo(() => {
-    // A simple way to detect incidents: when status changes from UP to DOWN/DEGRADED
-    const detectedIncidents = [];
+
+  const incidentCount = useMemo(() => {
+    let count = 0;
     for (let i = 1; i < runsData.length; i++) {
-      if (runsData[i].status !== 'UP' && runsData[i - 1].status === 'UP') {
-        // Incident started
-        detectedIncidents.push({
-          id: runsData[i].id,
-          startTime: new Date(runsData[i].started_at).toLocaleString(),
-          status: runsData[i].status,
-          description: `Service went from UP to ${runsData[i].status}`, // Simplified description
-        });
+      const currentStatus = runsData[i].status;
+      const previousStatus = runsData[i - 1].status;
+      if (currentStatus !== 'UP' && previousStatus === 'UP') {
+        count++;
       }
     }
-    return detectedIncidents;
+    return count;
   }, [runsData]);
 
   const containerStyle = { maxWidth: 1200, margin: '0 auto', padding: 24, color: '#1a1a1a' };
@@ -78,7 +75,7 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
   const actionsStyle = { display: 'flex', gap: 12 };
   const editBtn = { padding: '10px 16px', borderRadius: 8, border: '1px solid #6D0475', background: '#6D0475', color: '#ffffff', cursor: 'pointer', fontSize: '14px', fontWeight: 500, transition: 'all 0.2s ease' };
   const deleteBtn = { padding: '10px 16px', borderRadius: 8, border: '1px solid #dc2626', background: '#dc2626', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 500, transition: 'all 0.2s ease' };
-  
+
   const tabStyle = { padding: '10px 16px', borderRadius: 8, border: '1px solid #E5B8E8', background: '#ffffff', color: '#6D0475', cursor: 'pointer', fontSize: '14px', fontWeight: 500, transition: 'all 0.2s ease' };
   const activeTabStyle = { ...tabStyle, background: '#6D0475', color: '#ffffff' };
   const tabsStyle = { display: 'flex', gap: 8, marginBottom: 24 };
@@ -102,15 +99,20 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
   };
 
   if (isLoadingRuns) {
-    return <div style={containerStyle}>Загрузка данных проверки...</div>;
+
+    return <div style={containerStyle}>Загрузка данных сервиса...</div>;
   }
+
+  const currentStatus = check.status === 'UP' ? 'UP' : 'DOWN';
 
   return (
     <div style={containerStyle}>
       <div style={headerStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <button style={backBtn} onClick={onBack}>← Назад</button>
-          <h1 style={titleStyle}>Детали проверки: {check.name}</h1>
+
+          <h1 style={titleStyle}>Детали сервиса: {check.name}</h1>
+
         </div>
         <div style={actionsStyle}>
           <button style={editBtn} onClick={() => onEdit(check)}>Редактировать</button>
@@ -121,6 +123,9 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
       <div style={tabsStyle}>
         <button style={activeTab === 'overview' ? activeTabStyle : tabStyle} onClick={() => setActiveTab('overview')}>
           Обзор
+        </button>
+        <button style={activeTab === 'details' ? activeTabStyle : tabStyle} onClick={() => setActiveTab('details')}>
+          Детали
         </button>
         <button style={activeTab === 'incidents' ? activeTabStyle : tabStyle} onClick={() => setActiveTab('incidents')}>
           Инциденты
@@ -182,10 +187,34 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
         </>
       )}
 
+      {activeTab === 'details' && (
+        <div style={cardStyle}>
+          <h3 style={{ margin: '0 0 16px 0', color: '#6D0475', fontSize: 18, fontWeight: 600 }}>Детали сервиса</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
+            <div><strong>Название:</strong> {check.name}</div>
+            <div><strong>Описание:</strong> {check.description || '-'}</div>
+            <div><strong>URL:</strong> <a href={check.url} target="_blank" rel="noreferrer" style={{ color: '#6D0475', textDecoration: 'none' }}>{check.url}</a></div>
+            <div><strong>Тип сервиса:</strong> {check.serviceType}</div>
+            <div><strong>Включен:</strong> {check.enabled ? 'Да' : 'Нет'}</div>
+            <div><strong>Интервал проверки:</strong> {check.checkIntervalMinutes} мин</div>
+            <div><strong>Таймаут:</strong> {check.timeoutSeconds} сек</div>
+
+            {check.serviceType === 'API' && (
+              <>
+                <div><strong>HTTP Метод:</strong> {check.httpMethod || '-'}</div>
+                <div><strong>Ожидаемый код ответа:</strong> {check.expectedStatusCode || '-'}</div>
+                <div><strong>Ожидаемое тело ответа:</strong> {check.expectedResponseBody || '-'}</div>
+                {/* <div><strong>Заголовки:</strong> {JSON.stringify(check.headers) || '-'}</div> */}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {activeTab === 'incidents' && (
         <div style={cardStyle}>
           <h3 style={{ margin: '0 0 16px 0', color: '#6D0475', fontSize: 18, fontWeight: 600 }}>История инцидентов</h3>
-          {incidents.length > 0 ? (
+          {incidentCount > 0 ? (
             <table style={tableStyle}>
               <thead>
                 <tr>
@@ -199,10 +228,11 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
                   <tr key={incident.id}>
                     <td style={tdStyle}>{incident.startTime}</td>
                     <td style={tdStyle}>
-                      <span style={{ 
-                        padding: '2px 8px', 
-                        borderRadius: 12, 
-                        background: incident.status === 'UP' ? '#10b981' : (incident.status === 'DEGRADED' ? '#f59e0b' : '#ef4444'),
+
+                      <span style={{
+                        padding: '2px 8px',
+                        borderRadius: 12,
+                        background: incident.status === 'UP' ? '#10b981' : '#ef4444',
                         color: '#fff',
                         fontSize: 12
                       }}>

@@ -1,25 +1,38 @@
-import { useState, useEffect } from 'react'; // Import useEffect for initial state synchronization
+import { useState, useEffect } from 'react';
 
-function EditCheckModal({ check, open, onClose, onSubmit }) { // Renamed from EditServiceModal and service prop
+function EditCheckModal({ check, open, onClose, onSubmit }) {
   const [formData, setFormData] = useState({
     name: check?.name || '',
-    type: check?.type || 'HTTP', // Default to HTTP
-    target: check?.target || '',
-    interval_sec: check?.interval_sec || 60, // Default to 60 seconds
+    description: check?.description || '',
+    url: check?.url || '',
+    serviceType: check?.serviceType || 'PING',
+    enabled: check?.enabled ?? true,
+    checkIntervalMinutes: check?.checkIntervalMinutes || 5,
+    timeoutSeconds: check?.timeoutSeconds || 30,
+    httpMethod: check?.httpMethod || 'GET',
+    expectedStatusCode: check?.expectedStatusCode || 200,
+    expectedResponseBody: check?.expectedResponseBody || '',
+    // headers: check?.headers || {}, // Если нужно, можно добавить ввод для заголовков
   });
 
   useEffect(() => {
     if (check) {
       setFormData({
         name: check.name || '',
-        type: check.type || 'HTTP',
-        target: check.target || '',
-        interval_sec: check.interval_sec || 60,
+        description: check.description || '',
+        url: check.url || '',
+        serviceType: check.serviceType || 'PING',
+        enabled: check.enabled ?? true,
+        checkIntervalMinutes: check.checkIntervalMinutes || 5,
+        timeoutSeconds: check.timeoutSeconds || 30,
+        httpMethod: check.httpMethod || 'GET',
+        expectedStatusCode: check.expectedStatusCode || 200,
+        expectedResponseBody: check.expectedResponseBody || '',
+        // headers: check.headers || {},
       });
     }
   }, [check]);
 
-  // Добавляем новые состояния для отслеживания наведения кнопок
   const [isCancelButtonHovered, setIsCancelButtonHovered] = useState(false);
   const [isSaveButtonHovered, setIsSaveButtonHovered] = useState(false);
 
@@ -42,12 +55,10 @@ function EditCheckModal({ check, open, onClose, onSubmit }) { // Renamed from Ed
     boxShadow: '0 4px 12px rgba(109, 4, 117, 0.2)'
   };
   const label = { fontSize: 12, color: '#6D0475', marginBottom: 4, display: 'block', fontWeight: 600 };
-  // Обновляем inputStyle для корректной обработки ширины с padding и border
   const input = {
     width: '100%', borderRadius: '8px', border: '1px solid #E5B8E8', padding: '10px 12px',
     background: '#ffffff', color: '#1a1a1a', marginBottom: 12, fontSize: '14px', boxSizing: 'border-box'
   };
-  // Создаем selectStyle на основе inputStyle
   const select = { ...input, cursor: 'pointer', boxSizing: 'border-box' };
   const actions = { display: 'flex', gap: '12px', justifyContent: 'flex-end' };
   const btn = {
@@ -56,95 +67,169 @@ function EditCheckModal({ check, open, onClose, onSubmit }) { // Renamed from Ed
   };
   const saveBtn = { ...btn, background: '#6D0475', color: '#ffffff', border: '1px solid #6D0475' };
 
-  // Новые стили для кнопок с эффектом наведения
   const cancelButtonStyles = {
     ...btn,
-    background: isCancelButtonHovered ? '#f0f0f0' : '#ffffff', // Светлее на наведении
-    color: isCancelButtonHovered ? '#4a034f' : '#6D0475',     // Темнее текст
+    background: isCancelButtonHovered ? '#f0f0f0' : '#ffffff',
+    color: isCancelButtonHovered ? '#4a034f' : '#6D0475',
     border: '1px solid #E5B8E8',
   };
 
   const saveButtonStyles = {
     ...saveBtn,
-    background: isSaveButtonHovered ? '#8a0593' : '#6D0475', // Темнее на наведении
+    background: isSaveButtonHovered ? '#8a0593' : '#6D0475',
   };
 
   return (
     <div style={overlay} onClick={onClose}>
       <div style={modal} onClick={(e) => e.stopPropagation()}>
-        <div style={{ fontWeight: 600, fontSize: 16, color: '#6D0475' }}>Редактировать проверку</div>
+        <div style={{ fontWeight: 600, fontSize: 16, color: '#6D0475' }}>Редактировать сервис</div> {/* Обновлено название */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div>
             <label style={label} htmlFor="name">Название</label>
-            <input 
-              style={input} 
-              id="name" 
-              name="name" 
-              type="text" 
+            <input
+              style={input}
+              id="name"
+              name="name"
+              type="text"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              required 
+              required
             />
           </div>
           <div>
-            <label style={label} htmlFor="type">Тип проверки</label>
-            <select 
-              style={select} 
-              id="type" 
-              name="type" 
-              value={formData.type}
-              onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-            >
-              <option value="HTTP">HTTP</option>
-              <option value="HTTPS">HTTPS</option>
-              <option value="API_JSON">API_JSON</option>
-              <option value="API_XML">API_XML</option>
-            </select>
-          </div>
-          <div>
-            <label style={label} htmlFor="target">Цель (URL)</label>
-            <input 
-              style={input} 
-              id="target" 
-              name="target" 
-              type="text" 
-              value={formData.target}
-              onChange={(e) => setFormData(prev => ({ ...prev, target: e.target.value }))}
+            <label style={label} htmlFor="description">Описание</label>
+            <input
+              style={input}
+              id="description"
+              name="description"
+              type="text"
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
             />
           </div>
           <div>
-            <label style={label} htmlFor="interval_sec">Интервал проверки</label>
-            <select 
-              style={select} 
-              id="interval_sec" 
-              name="interval_sec" 
-              value={formData.interval_sec}
-              onChange={(e) => setFormData(prev => ({ ...prev, interval_sec: parseInt(e.target.value) }))}
+            <label style={label} htmlFor="url">URL</label>
+            <input
+              style={input}
+              id="url"
+              name="url"
+              type="text"
+              value={formData.url}
+              onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
+              required
+            />
+          </div>
+          <div>
+            <label style={label} htmlFor="serviceType">Тип сервиса</label>
+            <select
+              style={select}
+              id="serviceType"
+              name="serviceType"
+              value={formData.serviceType}
+              onChange={(e) => setFormData(prev => ({ ...prev, serviceType: e.target.value }))}
+              required
             >
-              <option value={15}>15 секунд</option>
-              <option value={30}>30 секунд</option>
-              <option value={60}>1 минута</option>
-              <option value={300}>5 минут</option>
-              <option value={600}>10 минут</option>
+              <option value="PING">PING</option>
+              <option value="API">API</option>
             </select>
           </div>
+          <div>
+            <label style={label} htmlFor="enabled">Включен</label>
+            <input
+              type="checkbox"
+              id="enabled"
+              name="enabled"
+              checked={formData.enabled}
+              onChange={(e) => setFormData(prev => ({ ...prev, enabled: e.target.checked }))}
+              style={{ marginLeft: '10px' }}
+            />
+          </div>
+          <div>
+            <label style={label} htmlFor="checkIntervalMinutes">Интервал проверки (минуты)</label>
+            <input
+              style={input}
+              id="checkIntervalMinutes"
+              name="checkIntervalMinutes"
+              type="number"
+              value={formData.checkIntervalMinutes}
+              onChange={(e) => setFormData(prev => ({ ...prev, checkIntervalMinutes: parseInt(e.target.value, 10) }))}
+              min="1"
+              required
+            />
+          </div>
+          <div>
+            <label style={label} htmlFor="timeoutSeconds">Таймаут (секунды)</label>
+            <input
+              style={input}
+              id="timeoutSeconds"
+              name="timeoutSeconds"
+              type="number"
+              value={formData.timeoutSeconds}
+              onChange={(e) => setFormData(prev => ({ ...prev, timeoutSeconds: parseInt(e.target.value, 10) }))}
+              min="1"
+              required
+            />
+          </div>
+
+          {formData.serviceType === 'API' && (
+            <>
+              <div>
+                <label style={label} htmlFor="httpMethod">HTTP Метод</label>
+                <select
+                  style={select}
+                  id="httpMethod"
+                  name="httpMethod"
+                  value={formData.httpMethod}
+                  onChange={(e) => setFormData(prev => ({ ...prev, httpMethod: e.target.value }))}
+                >
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                  <option value="PUT">PUT</option>
+                  <option value="DELETE">DELETE</option>
+                </select>
+              </div>
+              <div>
+                <label style={label} htmlFor="expectedStatusCode">Ожидаемый код ответа</label>
+                <input
+                  style={input}
+                  id="expectedStatusCode"
+                  name="expectedStatusCode"
+                  type="number"
+                  value={formData.expectedStatusCode}
+                  onChange={(e) => setFormData(prev => ({ ...prev, expectedStatusCode: parseInt(e.target.value, 10) }))}
+                />
+              </div>
+              <div>
+                <label style={label} htmlFor="expectedResponseBody">Ожидаемое тело ответа (JSON)</label>
+                <input
+                  style={input}
+                  id="expectedResponseBody"
+                  name="expectedResponseBody"
+                  type="text"
+                  value={formData.expectedResponseBody}
+                  onChange={(e) => setFormData(prev => ({ ...prev, expectedResponseBody: e.target.value }))}
+                  placeholder="{'status': 'ok'}"
+                />
+              </div>
+              {/* Headers можно добавить позже, если потребуется UI для них */}
+            </>
+          )}
+
           <div style={actions}>
-            {/* Кнопка "Отмена" */}
             <button
               type="button"
-              style={cancelButtonStyles} // Используем новый стиль
+              style={cancelButtonStyles}
               onClick={onClose}
-              onMouseEnter={() => setIsCancelButtonHovered(true)} // Обрабатываем наведение
-              onMouseLeave={() => setIsCancelButtonHovered(false)} // Обрабатываем уход курсора
+              onMouseEnter={() => setIsCancelButtonHovered(true)}
+              onMouseLeave={() => setIsCancelButtonHovered(false)}
             >
               Отмена
             </button>
-            {/* Кнопка "Сохранить" */}
             <button
               type="submit"
-              style={saveButtonStyles} // Используем новый стиль
-              onMouseEnter={() => setIsSaveButtonHovered(true)} // Обрабатываем наведение
-              onMouseLeave={() => setIsSaveButtonHovered(false)} // Обрабатываем уход курсора
+              style={saveButtonStyles}
+              onMouseEnter={() => setIsSaveButtonHovered(true)}
+              onMouseLeave={() => setIsSaveButtonHovered(false)}
             >
               Сохранить
             </button>

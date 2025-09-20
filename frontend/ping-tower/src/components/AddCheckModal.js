@@ -1,20 +1,40 @@
-import React, { useState } from 'react'; // Import useState for hover effects
+import React, { useState } from 'react';
 
-function AddCheckModal({ open, onClose, onSubmit }) { // Renamed from AddServiceModal
+
+function AddCheckModal({ open, onClose, onSubmit }) {
   const [isCancelButtonHovered, setIsCancelButtonHovered] = useState(false);
   const [isAddButtonHovered, setIsAddButtonHovered] = useState(false);
+  const [serviceType, setServiceType] = useState('PING'); // Default to PING
 
   if (!open) return null;
 
   function handleSubmit(event) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const payload = {
+
+    const basePayload = {
       name: String(formData.get('name') || '').trim(),
-      type: String(formData.get('type') || '').trim(),
-      target: String(formData.get('target') || '').trim(),
+
+      description: String(formData.get('description') || '').trim(),
+      url: String(formData.get('url') || '').trim(),
+      serviceType: serviceType,
+      enabled: true, // Всегда true при создании
+      checkIntervalMinutes: parseInt(formData.get('checkIntervalMinutes') || '5', 10),
+      timeoutSeconds: parseInt(formData.get('timeoutSeconds') || '30', 10),
     };
-    onSubmit(payload);
+
+    let specificPayload = {};
+
+    if (serviceType === 'API') {
+      specificPayload = {
+        httpMethod: String(formData.get('httpMethod') || 'GET').trim(),
+        // headers: JSON.parse(formData.get('headers') || '{}'), // Если нужно, можно добавить ввод для заголовков
+        expectedStatusCode: parseInt(formData.get('expectedStatusCode') || '200', 10),
+        expectedResponseBody: String(formData.get('expectedResponseBody') || '').trim(),
+      };
+    }
+
+    onSubmit({ ...basePayload, ...specificPayload });
   }
 
   const overlay = {
@@ -45,25 +65,60 @@ function AddCheckModal({ open, onClose, onSubmit }) { // Renamed from AddService
   return (
     <div style={overlay} onClick={onClose}>
       <div style={modal} onClick={(e) => e.stopPropagation()}>
-        <div style={{ fontWeight: 600, fontSize: 16, color: '#6D0475' }}>Новая проверка</div>
+
+        <div style={{ fontWeight: 600, fontSize: 16, color: '#6D0475' }}>Новый сервис мониторинга</div>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ flexDirection: 'column', gap: 6, display: 'flex' }}>
             <label style={label} htmlFor="name">Название</label>
             <input style={input} id="name" name="name" type="text" required />
           </div>
+          <div style={{ flexDirection: 'column', gap: 6, display: 'flex' }}>
+            <label style={label} htmlFor="description">Описание</label>
+            <input style={input} id="description" name="description" type="text" />
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={label} htmlFor="type">Тип</label>
-            <select style={selectStyle} id="type" name="type" required defaultValue="HTTP">
-              <option value="HTTP">HTTP</option>
-              <option value="HTTPS">HTTPS</option>
-              <option value="API_JSON">API_JSON</option>
-              <option value="API_XML">API_XML</option>
+            <label style={label} htmlFor="url">URL</label>
+            <input style={input} id="url" name="url" type="text" required />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <label style={label} htmlFor="serviceType">Тип сервиса</label>
+            <select style={selectStyle} id="serviceType" name="serviceType" required value={serviceType} onChange={(e) => setServiceType(e.target.value)}>
+              <option value="PING">PING</option>
+              <option value="API">API</option>
             </select>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={label} htmlFor="target">Цель (URL)</label>
-            <input style={input} id="target" name="target" type="text" required />
+            <label style={label} htmlFor="checkIntervalMinutes">Интервал проверки (минуты)</label>
+            <input style={input} id="checkIntervalMinutes" name="checkIntervalMinutes" type="number" defaultValue="5" min="1" required />
           </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <label style={label} htmlFor="timeoutSeconds">Таймаут (секунды)</label>
+            <input style={input} id="timeoutSeconds" name="timeoutSeconds" type="number" defaultValue="30" min="1" required />
+          </div>
+
+          {serviceType === 'API' && (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={label} htmlFor="httpMethod">HTTP Метод</label>
+                <select style={selectStyle} id="httpMethod" name="httpMethod" defaultValue="GET">
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                  <option value="PUT">PUT</option>
+                  <option value="DELETE">DELETE</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={label} htmlFor="expectedStatusCode">Ожидаемый код ответа</label>
+                <input style={input} id="expectedStatusCode" name="expectedStatusCode" type="number" defaultValue="200" />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={label} htmlFor="expectedResponseBody">Ожидаемое тело ответа (JSON)</label>
+                <input style={input} id="expectedResponseBody" name="expectedResponseBody" type="text" placeholder="{'status': 'ok'}" />
+              </div>
+              {/* Headers можно добавить позже, если потребуется UI для них */}
+            </>
+          )}
+
           <div style={actions}>
             <button
               type="button"
@@ -90,5 +145,3 @@ function AddCheckModal({ open, onClose, onSubmit }) { // Renamed from AddService
 }
 
 export default AddCheckModal;
-
-
