@@ -63,10 +63,8 @@ public class MonitoringService implements MonitoringDataService {
         // Store in ClickHouse for long-term analytics
         clickHouseRepository.saveCheckResults(List.of(checkResult));
         
-        // Process alerting logic if check failed
-        if (!checkResult.isSuccessful()) {
-            processAlertingLogic(checkResult);
-        }
+        // Process alerting logic
+        processAlertingLogic(checkResult);
     }
     
     /**
@@ -225,19 +223,89 @@ public class MonitoringService implements MonitoringDataService {
     }
     
     private void processAlertingLogic(CheckResult checkResult) {
-        if (!checkResult.isSuccessful()) {
-            // Get recent failures to determine if we should trigger an alert
-            LocalDateTime since = LocalDateTime.now().minusMinutes(30);
-            List<CheckResult> recentFailures = checkResultRepository
-                    .findRecentFailuresByServiceId(checkResult.getServiceId(), since);
-            
-            // Check if we have enough failures to trigger an alert
-            if (shouldTriggerAlert(checkResult, recentFailures)) {
-                createAndSendAlert(checkResult, recentFailures);
+        try {
+            Optional<MonitoredService> serviceOpt = monitoredServiceRepository.findById(checkResult.getServiceId());
+            if (serviceOpt.isEmpty()) {
+                return;
             }
-        } else {
-            // Check if this is a recovery from previous failures
-            checkForRecoveryAlert(checkResult);
+            
+            MonitoredService service = serviceOpt.get();
+            boolean previousIsAlive = service.isAlive();
+            boolean currentIsAlive = checkResult.isSuccessful();
+            
+            // Update isAlive status if changed
+            if (previousIsAlive != currentIsAlive) {
+                service.setAlive(currentIsAlive);
+                monitoredServiceRepository.save(service);
+                
+                // Send notification for status change
+                sendStatusChangeNotification(service, currentIsAlive);
+            }
+            
+            // Process failure alerts if check failed
+            if (!checkResult.isSuccessful()) {
+                // Get recent failures to determine if we should trigger an alert
+                LocalDateTime since = LocalDateTime.now().minusMinutes(30);
+                List<CheckResult> recentFailures = checkResultRepository
+                        .findRecentFailuresByServiceId(checkResult.getServiceId(), since);
+                
+                // Check if we have enough failures to trigger an alert
+                if (shouldTriggerAlert(checkResult, recentFailures)) {
+                    createAndSendAlert(checkResult, recentFailures);
+                }
+            } else {
+                // Check if this is a recovery from previous failures
+                checkForRecoveryAlert(checkResult);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to process alerting logic for service: {}", checkResult.getServiceId(), e);
+        }
+    }
+    
+    /**
+     * Sends notification when service status changes (isAlive changes)
+     */
+    private void sendStatusChangeNotification(MonitoredService service, boolean isAlive) {
+        try {
+            String message = isAlive 
+                ? String.format("Service '%s' is now UP and responding normally.", service.getName())
+                : String.format("Service '%s' is now DOWN and not responding.", service.getName());
+            
+            // Create status change alert
+            Alert statusAlert = new Alert();
+            statusAlert.setServiceId(service.getId());
+            statusAlert.setMessage(message);
+            statusAlert.setSeverity(isAlive ? "INFO" : "HIGH");
+            statusAlert.setIsResolved(isAlive);
+            statusAlert.setTriggeredAt(LocalDateTime.now());
+            if (isAlive) {
+                statusAlert.setResolvedAt(LocalDateTime.now());
+            }
+            
+            // Add metadata
+            Map<String, String> metadata = new HashMap<>();
+            metadata.put("type", "STATUS_CHANGE");
+            metadata.put("serviceId", service.getId().toString());
+            metadata.put("serviceName", service.getName());
+            metadata.put("serviceUrl", service.getUrl());
+            metadata.put("newStatus", isAlive ? "UP" : "DOWN");
+            metadata.put("changeTime", LocalDateTime.now().toString());
+            statusAlert.setMetadata(metadata);
+            
+            // Save alert
+            Alert savedAlert = alertRepository.save(statusAlert);
+            
+            // Send notification
+            try {
+                notificationService.sendAlert(savedAlert);
+                logger.info("Status change notification sent for service {}: {}", service.getName(), message);
+            } catch (Exception notificationError) {
+                logger.error("Failed to send status change notification for service {}: {}", 
+                           service.getName(), notificationError.getMessage());
+            }
+            
+        } catch (Exception e) {
+            logger.error("Failed to send status change notification for service: {}", service.getId(), e);
         }
     }
     
@@ -257,10 +325,6 @@ public class MonitoringService implements MonitoringDataService {
         
         return false;
     }
-    
-    /**
-     * Creates and sends an alert for service failures
-     */
     private void createAndSendAlert(CheckResult checkResult, List<CheckResult> recentFailures) {
         try {
             // Get service information
