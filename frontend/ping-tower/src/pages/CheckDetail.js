@@ -55,18 +55,22 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) {
     return ((upRuns / runsData.length) * 100).toFixed(2);
   }, [runsData]);
 
-
-  const incidentCount = useMemo(() => {
-    let count = 0;
+  const incidents = useMemo(() => {
+    const detectedIncidents = [];
     for (let i = 1; i < runsData.length; i++) {
-      const currentStatus = runsData[i].status;
-      const previousStatus = runsData[i - 1].status;
-      if (currentStatus !== 'UP' && previousStatus === 'UP') {
-        count++;
+      if (runsData[i].status !== 'UP' && runsData[i - 1].status === 'UP') {
+        detectedIncidents.push({
+          id: runsData[i].id,
+          startTime: new Date(runsData[i].started_at).toLocaleString(),
+          status: 'DOWN', // Консолидировано для отображения UP/DOWN
+          description: `Service went from UP to ${runsData[i].status}`,
+        });
       }
     }
-    return count;
+    return detectedIncidents;
   }, [runsData]);
+
+  const incidentCount = incidents.length; // Вычисляем incidentCount на основе массива incidents
 
   const containerStyle = { maxWidth: 1200, margin: '0 auto', padding: 24, color: '#1a1a1a' };
   const headerStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 };
@@ -214,7 +218,7 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) {
       {activeTab === 'incidents' && (
         <div style={cardStyle}>
           <h3 style={{ margin: '0 0 16px 0', color: '#6D0475', fontSize: 18, fontWeight: 600 }}>История инцидентов</h3>
-          {incidentCount > 0 ? (
+          {incidents.length > 0 ? (
             <table style={tableStyle}>
               <thead>
                 <tr>
@@ -236,7 +240,7 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) {
                         color: '#fff',
                         fontSize: 12
                       }}>
-                        {incident.status === 'UP' ? 'UP' : (incident.status === 'DEGRADED' ? 'DEGRADED' : 'DOWN')}
+                        {incident.status}
                       </span>
                     </td>
                     <td style={tdStyle}>{incident.description}</td>
