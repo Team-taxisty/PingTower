@@ -2,6 +2,58 @@ name: Build and Deploy
 
 on:
   push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        
+    - name: Build Backend
+      run: |
+        cd backend
+        chmod +x gradlew
+        ./gradlew build -x test
+        
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Build Frontend
+      run: |
+        cd frontend/ping-tower
+        npm ci
+        npm run build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: 203.81.208.67
+        username: ubuntu
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /opt/pingtower || (mkdir -p /opt/pingtower && cd /opt/pingtower)
+          git pull origin main || git clone https://github.com/Team-taxisty/PingTower.git .
+          cd docker
+          docker-compose down || true
+          docker-compose up -d --build
+
+name: Build and Deploy
+
+on:
+  push:
     branches: [ main, docker ]
 
 jobs:
