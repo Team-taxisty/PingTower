@@ -1,55 +1,54 @@
-# API Module
+# Модуль API
 
-Purpose: HTTP REST layer for managing checks and exposing system functionality. Defines request/response DTOs, controllers, error mapping, and OpenAPI contract.
+Назначение: слой HTTP REST для управления проверками и предоставления функциональности системы. Определяет DTO запросов/ответов, контроллеры, сопоставление ошибок и контракт OpenAPI.
 
-## Structure
-- controller: Spring MVC controllers (`ChecksController`, `RunsController`, `NotificationsController`)
-- dto: Request/response payloads (e.g., `CheckDto`, `CheckCreateDto`, `SendNotificationRequest`)
-- service: API-level services and helpers (`CheckService`, `RunService`, `IdempotencyService`)
-- error: Unified error responses and exception handler (`GlobalExceptionHandler`)
-- openapi.yml: OpenAPI 3.1 specification
+## Структура
+- controller: контроллеры Spring MVC (`ChecksController`, `RunsController`, `NotificationsController`)
+- dto: полезные нагрузки запросов/ответов (например, `CheckDto`, `CheckCreateDto`, `SendNotificationRequest`)
+- service: сервисы и вспомогательные компоненты уровня API (`CheckService`, `RunService`, `IdempotencyService`)
+- error: унифицированные ответы об ошибках и обработчик исключений (`GlobalExceptionHandler`)
+- openapi.yml: спецификация OpenAPI 3.1
 
-Package root: `taxisty.pingtower.backend.api`
+Корневой пакет: `taxisty.pingtower.backend.api`
 
-## Interaction
-REST over HTTP. Base path is configured via `server.servlet.context-path`.
+## Взаимодействие
+REST поверх HTTP. Базовый путь настраивается через `server.servlet.context-path`.
 
-- List checks
+- Список проверок
   - GET `/checks?limit={1..500}&cursor={string}`
-  - Response: `{ items: Check[], next_cursor: string|null }`
+  - Ответ: `{ items: Check[], next_cursor: string|null }`
 
-- Create check (idempotent)
+- Создать проверку (идемпотентно)
   - POST `/checks`
-  - Headers: `Idempotency-Key: <string>`
-  - Body: `CheckCreate`
-  - Responses: `201` (created), `200` (idempotent replay), `409` (conflict)
+  - Заголовки: `Idempotency-Key: <string>`
+  - Тело: `CheckCreate`
+  - Ответы: `201` (создано), `200` (повтор идемпотентной операции), `409` (конфликт)
 
-- Get check
+- Получить проверку
   - GET `/checks/{id}`
 
-- Update check (partial)
+- Обновить проверку (частично)
   - PATCH `/checks/{id}`
 
-- Delete check
+- Удалить проверку
   - DELETE `/checks/{id}`
 
-- List runs
+- Список запусков
   - GET `/runs?check_id={uuid}&from={iso}&to={iso}&limit={int}`
-  - Response: `{ items: Run[] }`
+  - Ответ: `{ items: Run[] }`
 
-- Test notification delivery (for notifications module)
+- Тестовая отправка уведомления (для модуля notifications)
   - POST `/notifications/test`
-  - Body: `SendNotificationRequest`
+  - Тело: `SendNotificationRequest`
 
-Error model: `ErrorResponse { code, message, details? }`
+Модель ошибки: `ErrorResponse { code, message, details? }`
 
-## Conventions
-- Pagination: `limit` + `next_cursor`
-- Idempotency: `Idempotency-Key` header on create operations
-- Validation: `jakarta.validation` annotations on DTOs
-- Errors: mapped by `GlobalExceptionHandler` to `ErrorResponse`
+## Соглашения
+- Постраничность: `limit` + `next_cursor`
+- Идемпотентность: заголовок `Idempotency-Key` для операций создания
+- Валидация: аннотации `jakarta.validation` на DTO
+- Ошибки: сопоставляются `GlobalExceptionHandler` к `ErrorResponse`
 
 ## OpenAPI
-- Spec file: `api/openapi.yml`
-- Use as source of truth for client generation and endpoint review
-
+- Файл спецификации: `api/openapi.yml`
+- Используется как источник истины для генерации клиентов и ревью эндпоинтов

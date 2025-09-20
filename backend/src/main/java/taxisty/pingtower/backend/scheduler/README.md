@@ -1,147 +1,147 @@
-# PingTower Scheduler
+# Планировщик PingTower
 
-The scheduler package provides a comprehensive monitoring task execution system built on Spring Boot and Quartz Scheduler. It enables flexible, cron-like scheduling of service monitoring checks with support for different monitoring types and configurable intervals.
+Пакет планировщика предоставляет полноценную систему выполнения задач мониторинга на базе Spring Boot и Quartz Scheduler. Обеспечивает гибкое расписание проверок сервисов в стиле cron с поддержкой разных типов мониторинга и настраиваемых интервалов.
 
-## Architecture
+## Архитектура
 
 ```
 scheduler/
-├── config/
-│   ├── AutowiringSpringBeanJobFactory.java    # Spring DI integration for Quartz jobs
-│   ├── SchedulerConfig.java                   # Main scheduler configuration
-│   └── SchedulerProperties.java               # Configuration properties
-├── service/
-│   ├── MonitoringExecutorService.java         # Task execution coordinator
-│   ├── MonitoringJob.java                     # Quartz job implementation
-│   ├── SchedulerManagementService.java        # Lifecycle management
-│   ├── SchedulerService.java                  # Core scheduling operations
-│   └── MonitoringDataService.java             # Data access interface
+└── config/
+    ├── AutowiringSpringBeanJobFactory.java    # Интеграция Spring DI для задач Quartz
+    ├── SchedulerConfig.java                   # Основная конфигурация планировщика
+    └── SchedulerProperties.java               # Конфигурационные свойства
+└── service/
+    ├── MonitoringExecutorService.java         # Координатор выполнения задач
+    ├── MonitoringJob.java                     # Реализация задачи Quartz
+    ├── SchedulerManagementService.java        # Управление жизненным циклом
+    ├── SchedulerService.java                  # Основные операции планирования
+    └── MonitoringDataService.java             # Интерфейс доступа к данным
 └── task/
-    ├── ScheduledTask.java                     # Task interface
-    ├── TaskExecutionContext.java              # Execution metadata
-    ├── TaskType.java                          # Task type enumeration
-    ├── HttpMonitoringTask.java                # HTTP/HTTPS monitoring
-    └── ApiMonitoringTask.java                 # API endpoint monitoring
+    ├── ScheduledTask.java                     # Интерфейс задачи
+    ├── TaskExecutionContext.java              # Метаданные выполнения
+    ├── TaskType.java                          # Перечисление типов задач
+    ├── HttpMonitoringTask.java                # Мониторинг HTTP/HTTPS
+    └── ApiMonitoringTask.java                 # Мониторинг API‑эндпоинтов
 ```
 
-## Core Components
+## Ключевые Компоненты
 
 ### SchedulerService
-Main orchestrator for monitoring task scheduling. Provides methods to:
-- Schedule monitoring for services with flexible intervals (seconds to hours)
-- Support both cron expressions and simple intervals
-- Handle job lifecycle (create, update, delete, trigger immediate execution)
-- Integrate with Quartz scheduler for persistent job storage
+Главный оркестратор планирования задач мониторинга. Предоставляет возможности:
+- Планировать мониторинг сервисов с гибкими интервалами (от секунд до часов)
+- Поддерживать как cron‑выражения, так и простые интервалы
+- Управлять жизненным циклом задач (создание, обновление, удаление, немедленный запуск)
+- Интегрироваться с Quartz для устойчивого хранения задач
 
-Key methods:
-- `scheduleMonitoring(MonitoredService, CheckSchedule)` - Schedule a service for monitoring
-- `unscheduleMonitoring(Long serviceId)` - Remove monitoring schedule
-- `rescheduleMonitoring(MonitoredService, CheckSchedule)` - Update existing schedule
-- `triggerImmediateCheck(Long serviceId)` - Force immediate execution
+Ключевые методы:
+- `scheduleMonitoring(MonitoredService, CheckSchedule)` — запланировать мониторинг сервиса
+- `unscheduleMonitoring(Long serviceId)` — снять сервис с мониторинга
+- `rescheduleMonitoring(MonitoredService, CheckSchedule)` — обновить существующее расписание
+- `triggerImmediateCheck(Long serviceId)` — запустить проверку немедленно
 
 ### MonitoringExecutorService
-Coordinates task execution and result handling:
-- Selects appropriate monitoring task based on service configuration
-- Executes monitoring tasks with error handling and retry logic
-- Stores results and triggers alerts on failures
-- Manages task registry for different monitoring types
+Координирует выполнение задач и обработку результатов:
+- Выбирает подходящую задачу мониторинга на основе конфигурации сервиса
+- Выполняет задачи мониторинга с обработкой ошибок и логикой повторов
+- Сохраняет результаты и инициирует оповещения при сбоях
+- Управляет реестром задач для разных типов мониторинга
 
-### Task Implementations
+### Реализации Задач
 
 #### HttpMonitoringTask
-Performs basic HTTP/HTTPS availability checks:
-- Supports all HTTP methods (GET, POST, PUT, DELETE, HEAD)
-- Configurable timeouts and custom headers
-- Response code validation (specific codes or patterns like "2xx")
-- Content validation for expected response body content
-- SSL certificate validation with expiry date checking
-- Response time measurement
+Выполняет базовые проверки доступности HTTP/HTTPS:
+- Поддерживает все HTTP‑методы (GET, POST, PUT, DELETE, HEAD)
+- Настраиваемые таймауты и пользовательские заголовки
+- Валидация кода ответа (конкретные коды или шаблоны вроде «2xx»)
+- Проверка содержимого на ожидаемый контент ответа
+- Проверка SSL‑сертификата с контролем срока действия
+- Измерение времени ответа
 
 #### ApiMonitoringTask
-Enhanced monitoring for API endpoints:
-- JSON/XML response parsing and validation
-- Health check endpoint pattern recognition
-- API-specific header handling (Accept: application/json)
-- Structured response validation for common health check patterns
-- Content-type aware processing
+Расширенный мониторинг для API‑эндпоинтов:
+- Разбор и валидация JSON/XML ответов
+- Распознавание стандартных health‑эндпоинтов
+- Обработка API‑специфичных заголовков (Accept: application/json)
+- Структурированная проверка ответа для типовых health‑паттернов
+- Учёт типа контента при обработке
 
-## Configuration
+## Конфигурация
 
 ### Application Properties
 ```properties
-# Scheduler instance configuration
+# Конфигурация экземпляра планировщика
 pingtower.scheduler.instance-name=PingTowerScheduler
 pingtower.scheduler.thread-count=10
 pingtower.scheduler.clustered=false
 
-# Timing configuration
+# Настройки таймингов
 pingtower.scheduler.misfire-threshold=60000
 pingtower.scheduler.cluster-checkin-interval=20000
 
-# Retry and timeout settings
+# Настройки повторов и таймаутов
 pingtower.scheduler.max-retry-attempts=3
 pingtower.scheduler.retry-delay-seconds=30
 pingtower.scheduler.default-timeout-seconds=30
 
-# Startup behavior
+# Поведение при запуске
 pingtower.scheduler.auto-start=true
 ```
 
-### Database Integration
-The scheduler uses Quartz's JDBC job store for persistence:
-- Jobs and triggers are stored in PostgreSQL database
-- Supports clustering for high availability
-- Automatic job recovery after application restarts
-- Misfire handling for delayed executions
+### Интеграция с БД
+Планировщик использует JDBC‑хранилище Quartz для персистентности:
+- Задачи и триггеры хранятся в базе PostgreSQL
+- Поддерживается кластеризация для высокой доступности
+- Автоматическое восстановление задач после перезапуска приложения
+- Обработка «misfire» для отложенных запусков
 
-## Monitoring Schedule Configuration
+## Настройка Расписания Мониторинга
 
-Schedules are configured using the `CheckSchedule` model with two options:
+Расписания задаются с помощью модели `CheckSchedule` двумя способами:
 
-### Cron-based Scheduling
+### Планирование на основе Cron
 ```java
 CheckSchedule cronSchedule = new CheckSchedule(
     null,                    // id
-    serviceId,              // serviceId
-    "0 */5 * * * ?",        // every 5 minutes
-    0,                      // intervalSeconds (ignored)
-    true,                   // isEnabled
-    "UTC",                  // timezone
-    null,                   // nextRunTime
-    LocalDateTime.now(),    // createdAt
-    LocalDateTime.now()     // updatedAt
+    serviceId,               // serviceId
+    "0 */5 * * * ?",        // каждые 5 минут
+    0,                       // intervalSeconds (игнорируется)
+    true,                    // isEnabled
+    "UTC",                  // часовой пояс
+    null,                    // nextRunTime
+    LocalDateTime.now(),     // createdAt
+    LocalDateTime.now()      // updatedAt
 );
 ```
 
-### Interval-based Scheduling
+### Планирование по Интервалу
 ```java
 CheckSchedule intervalSchedule = new CheckSchedule(
-    null,                   // id
-    serviceId,             // serviceId
-    null,                  // cronExpression
-    300,                   // intervalSeconds (5 minutes)
-    true,                  // isEnabled
-    "UTC",                 // timezone
-    null,                  // nextRunTime
-    LocalDateTime.now(),   // createdAt
-    LocalDateTime.now()    // updatedAt
+    null,                    // id
+    serviceId,               // serviceId
+    null,                    // cronExpression
+    300,                     // intervalSeconds (5 минут)
+    true,                    // isEnabled
+    "UTC",                  // часовой пояс
+    null,                    // nextRunTime
+    LocalDateTime.now(),     // createdAt
+    LocalDateTime.now()      // updatedAt
 );
 ```
 
-## Task Execution Flow
+## Поток Выполнения Задачи
 
-1. **Quartz Trigger Fires** - Based on cron expression or interval
-2. **MonitoringJob.execute()** - Quartz job entry point
-3. **MonitoringExecutorService.executeMonitoring()** - Task coordination
-4. **Task Selection** - Choose appropriate task type (HTTP, API, SSL)
-5. **Task Execution** - Perform actual monitoring check
-6. **Result Processing** - Store results and handle failures
-7. **Alert Handling** - Trigger alerts for failed checks (via MonitoringDataService)
+1. **Срабатывание триггера Quartz** — по cron‑выражению или интервалу
+2. **MonitoringJob.execute()** — точка входа задачи Quartz
+3. **MonitoringExecutorService.executeMonitoring()** — координация выполнения
+4. **Выбор задачи** — определяется подходящий тип (HTTP, API, SSL)
+5. **Выполнение задачи** — реальная проверка мониторинга
+6. **Обработка результата** — сохранение результатов и обработка сбоев
+7. **Оповещения** — генерация алертов для неуспешных проверок (через MonitoringDataService)
 
-## Integration Points
+## Точки Интеграции
 
-### Storage Layer Integration
-The scheduler requires implementation of `MonitoringDataService` interface:
+### Интеграция со Слоем Хранения
+Планировщик требует реализацию интерфейса `MonitoringDataService`:
 ```java
 public interface MonitoringDataService {
     MonitoredService getMonitoredService(Long serviceId);
@@ -150,8 +150,8 @@ public interface MonitoringDataService {
 }
 ```
 
-### Service Registration
-Monitoring tasks are automatically discovered via Spring's component scanning:
+### Регистрация Сервисов
+Задачи мониторинга автоматически обнаруживаются с помощью компонент‑сканирования Spring:
 ```java
 @Component
 public class CustomMonitoringTask implements ScheduledTask {
@@ -162,19 +162,19 @@ public class CustomMonitoringTask implements ScheduledTask {
     
     @Override
     public CheckResult execute(MonitoredService service) {
-        // Implementation
+        // Реализация
     }
     
     @Override
     public boolean canExecute(MonitoredService service) {
-        // Validation logic
+        // Логика валидации
     }
 }
 ```
 
-## Usage Examples
+## Примеры Использования
 
-### Basic Service Scheduling
+### Базовое Планирование Сервиса
 ```java
 @Autowired
 private SchedulerService schedulerService;
@@ -197,74 +197,55 @@ public void setupMonitoring() {
 }
 ```
 
-### Immediate Check Execution
+### Немедленное Выполнение Проверки
 ```java
-// Trigger immediate check outside regular schedule
+// Запустить немедленную проверку вне расписания
 schedulerService.triggerImmediateCheck(serviceId);
 ```
 
-### Schedule Management
+### Управление Расписанием
 ```java
-// Update existing schedule
+// Обновить существующее расписание
 schedulerService.rescheduleMonitoring(service, newSchedule);
 
-// Remove monitoring
+// Удалить мониторинг
 schedulerService.unscheduleMonitoring(serviceId);
 
-// Check if service is scheduled
+// Проверить, что сервис запланирован
 boolean isScheduled = schedulerService.isMonitoringScheduled(serviceId);
 ```
 
-## Error Handling
+## Обработка Ошибок
 
-The scheduler implements comprehensive error handling:
+Планировщик реализует комплексную обработку ошибок:
 
-1. **Network Failures** - Captured with timeout handling
-2. **Invalid Configurations** - Validated before scheduling
-3. **Task Execution Errors** - Logged with error results stored
-4. **Scheduler Failures** - Graceful degradation with retry mechanisms
-5. **Database Issues** - Quartz handles job persistence failures
+1. **Сетевые ошибки** — перехватываются с учётом таймаутов
+2. **Неверные конфигурации** — валидируются до планирования
+3. **Ошибки выполнения задач** — логируются, результаты ошибок сохраняются
+4. **Сбои планировщика** — плавная деградация с механизмами повторов
+5. **Проблемы БД** — Quartz обрабатывает ошибки персистентности задач
 
-## Performance Considerations
+## Соображения Производительности
 
-### Thread Pool Sizing
-- Default: 10 threads for monitoring execution
-- Configurable via `pingtower.scheduler.thread-count`
-- Size based on expected concurrent monitoring load
+### Размер Пула Потоков
+- По умолчанию: 10 потоков для выполнения мониторинга
+- Настраивается через `pingtower.scheduler.thread-count`
+- Размер выбирается исходя из ожидаемой параллельной нагрузки
 
-### Resource Management
-- HTTP connections use timeouts (default 30 seconds)
-- Response bodies are truncated (1KB for HTTP, 2KB for API)
-- SSL certificate checks are cached per execution
+### Управление Ресурсами
+- HTTP‑подключения используют таймауты (по умолчанию 30 секунд)
+- Тела ответов усечены (1KB для HTTP, 2KB для API)
+- Проверки SSL‑сертификатов кэшируются в рамках выполнения
 
-### Database Impact
-- Efficient job storage using Quartz JDBC store
-- Check results stored via batch operations where possible
-- Historical data cleanup should be implemented separately
+### Влияние на Базу Данных
+- Эффективное хранение задач с использованием JDBC‑хранилища Quartz
+- Результаты проверок по возможности сохраняются пакетно
+- Очистку исторических данных следует реализовать отдельно
 
-## Monitoring and Observability
+## Мониторинг и Наблюдаемость
 
-The scheduler provides logging at multiple levels:
-- INFO: Scheduling lifecycle events
-- DEBUG: Individual task executions
-- ERROR: Failures and exceptions
-- WARN: Configuration issues
+Планировщик ведёт логирование на нескольких уровнях:
+- INFO: события жизненного цикла планирования
+- DEBUG: выполнение отдельных задач
+- ERROR: ошибки и исключения
 
-Metrics can be collected via:
-- Quartz scheduler statistics
-- Custom metrics in task implementations
-- Spring Boot Actuator integration (if enabled)
-
-## Extensibility
-
-### Adding New Task Types
-1. Implement `ScheduledTask` interface
-2. Add `@Component` annotation
-3. Define unique task type in `TaskType` enum
-4. Implement task selection logic in `MonitoringExecutorService`
-
-### Custom Configuration
-Additional configuration properties can be added to `SchedulerProperties` and accessed throughout the scheduler package.
-
-### Integration with Other Systems
-The `MonitoringDataService` interface allows integration with different storage layers and alerting systems without modifying core scheduler logic.

@@ -1,46 +1,46 @@
-## Notifications Module
+## Модуль Notifications
 
-Purpose: delivery of alert notifications via Telegram, Email (SMTP), and HTTP Webhooks. Provides a routing service and per-channel senders.
+Назначение: доставка уведомлений об инцидентах через Telegram, Email (SMTP) и HTTP Webhooks. Предоставляет сервис маршрутизации и отправители для каждого канала.
 
-### Structure
-- NotificationService: routes messages to a channel by type and JSON configuration
-- NotificationChannelType: supported channel types (TELEGRAM, EMAIL, WEBHOOK)
-- NotificationMessage: normalized message object (title, text, severity, link, attributes)
-- config: channel configuration records (TelegramConfig, EmailConfig, WebhookConfig)
-- sender: concrete senders (TelegramNotificationSender, EmailNotificationSender, WebhookNotificationSender)
+### Структура
+- NotificationService: маршрутизирует сообщения в канал по типу и JSON‑конфигурации
+- NotificationChannelType: поддерживаемые типы каналов (TELEGRAM, EMAIL, WEBHOOK)
+- NotificationMessage: нормализованное сообщение (title, text, severity, link, attributes)
+- config: записи конфигурации каналов (TelegramConfig, EmailConfig, WebhookConfig)
+- sender: конкретные отправители (TelegramNotificationSender, EmailNotificationSender, WebhookNotificationSender)
 
-Package root: `taxisty.pingtower.backend.notifications`
+Корневой пакет: `taxisty.pingtower.backend.notifications`
 
-### Interaction
-Programmatic
-- Service: `NotificationService`
-- Method: `send(String type, String configurationJson, NotificationMessage message)`
-- Types: case-insensitive strings: `telegram`, `email`, `webhook`
+### Взаимодействие
+Программное
+- Сервис: `NotificationService`
+- Метод: `send(String type, String configurationJson, NotificationMessage message)`
+- Типы: нечувствительные к регистру строки: `telegram`, `email`, `webhook`
 
-Message fields
-- `title`: short title
-- `text`: main content
-- `severity`: e.g. `INFO`, `WARN`, `CRITICAL`
-- `link`: optional URL
-- `attributes`: key-value map for extra context
+Поля сообщения
+- `title`: короткий заголовок
+- `text`: основное содержимое
+- `severity`: например, `INFO`, `WARN`, `CRITICAL`
+- `link`: необязательный URL
+- `attributes`: карта ключ‑значение для дополнительного контекста
 
-Channel configuration (JSON)
+Конфигурация канала (JSON)
 - Telegram (TelegramConfig)
   - `{ "botToken": "<token>", "chatId": "<chat_id>" }`
 - Email (EmailConfig)
   - `{ "from": "alerts@example.com", "to": ["dev@example.com"], "subjectPrefix": "[PingTower]" }`
-  - SMTP server is taken from Spring `spring.mail.*` configuration
+  - SMTP‑сервер берётся из настроек Spring `spring.mail.*`
 - Webhook (WebhookConfig)
   - `{ "url": "https://example.com/hook", "secret": "optional", "headers": { "X-App": "PingTower" } }`
 
 REST
-- Test endpoint
+- Тестовый эндпоинт
   - POST `/notifications/test`
-  - Body: `SendNotificationRequest { type, configuration, title, text, severity, link, attributes }`
-  - Response: `{ "status": "sent" }`
+  - Тело: `SendNotificationRequest { type, configuration, title, text, severity, link, attributes }`
+  - Ответ: `{ "status": "sent" }`
 
-### Configuration
-Spring Mail (global), in `application.yaml`:
+### Конфигурация
+Spring Mail (глобально), в `application.yaml`:
 - `spring.mail.host`
 - `spring.mail.port`
 - `spring.mail.username`
@@ -48,12 +48,11 @@ Spring Mail (global), in `application.yaml`:
 - `spring.mail.properties.mail.smtp.auth`
 - `spring.mail.properties.mail.smtp.starttls.enable`
 
-### Dependencies
-- Spring Mail (spring-boot-starter-mail) for Email channel
-- Jackson for JSON serialization
-- Java HttpClient for Telegram and Webhook channels
+### Зависимости
+- Spring Mail (spring-boot-starter-mail) для канала Email
+- Jackson для сериализации JSON
+- Java HttpClient для каналов Telegram и Webhook
 
-### Error Handling
-- Exceptions during sending are logged and rethrown by `NotificationService`
-- Callers should handle failures and/or implement retries at call site
-
+### Обработка ошибок
+- Исключения при отправке логируются и пробрасываются `NotificationService`
+- Вызывающие должны обрабатывать сбои и/или реализовать ретраи на своей стороне
