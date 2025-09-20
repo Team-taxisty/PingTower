@@ -15,7 +15,6 @@ function Filters({ activeFilter, onChange }) {
     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
       <button style={buttonStyle(activeFilter === 'all')} onClick={() => onChange('all')}>Все</button>
       <button style={buttonStyle(activeFilter === 'ok')} onClick={() => onChange('ok')}>Рабочие</button>
-      <button style={buttonStyle(activeFilter === 'degraded')} onClick={() => onChange('degraded')}>Деградация</button>
       <button style={buttonStyle(activeFilter === 'down')} onClick={() => onChange('down')}>Упавшие</button>
     </div>
   );

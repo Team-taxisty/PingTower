@@ -15,10 +15,10 @@ import Auth from './pages/Auth';
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [isAddButtonHovered, setIsAddButtonHovered] = useState(false); // New state for hover effect
   const [selectedService, setSelectedService] = useState(null);
   const [services, setServices] = useState(() => [
     { id: '1', name: 'API Gateway', url: 'https://api.example.com/health', status: 'ok' },
-    { id: '2', name: 'Auth Service', url: 'https://auth.example.com/health', status: 'degraded' },
     { id: '3', name: 'Payments', url: 'https://payments.example.com/health', status: 'down' },
   ]);
   const [filter, setFilter] = useState('all');
@@ -87,16 +87,17 @@ function App() {
   const pageStyle = { maxWidth: 1120, margin: '0 auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 20, color: '#1a1a1a' };
   const headerStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
   const titleStyle = { margin: 0, fontSize: 24, fontWeight: 700, color: '#6D0475' };
-  const addBtn = { 
-    padding: '10px 14px', 
-    borderRadius: 10, 
-    border: '1px solid #6D0475', 
-    cursor: 'pointer', 
-    background: '#6D0475', 
+  const addBtn = {
+    padding: '10px 14px',
+    borderRadius: 10,
+    border: '1px solid #6D0475',
+    cursor: 'pointer',
+    background: isAddButtonHovered ? '#8a0593' : '#6D0475', // Darker purple on hover
     color: '#ffffff',
     fontSize: 14,
     fontWeight: 500,
-    transition: 'all 0.2s ease'
+    fontFamily: 'Inter',
+    transition: 'all 0.2s ease',
   };
 
   function renderPage() {
@@ -105,7 +106,14 @@ function App() {
         return (
           <>
             <div style={headerStyle}>
-              <button style={addBtn} onClick={() => setIsModalOpen(true)}>Добавить новый сервис</button>
+              <button
+                style={addBtn}
+                onClick={() => setIsModalOpen(true)}
+                onMouseEnter={() => setIsAddButtonHovered(true)} // Handle hover in
+                onMouseLeave={() => setIsAddButtonHovered(false)} // Handle hover out
+              >
+                Добавить новый сервис
+              </button>
             </div>
 
             <div style={{ background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)', marginBottom: 20, overflow: 'hidden' }}>

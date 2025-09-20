@@ -14,23 +14,22 @@ function StatusPieChart({ data }) {
       {
         name: 'Статусы',
         type: 'pie',
-        radius: ['40%', '65%'],
-        center: ['50%', '50%'],
+        radius: ['40%', '85%'],
+        center: ['50%', '44%'],
         avoidLabelOverlap: true,
         itemStyle: { borderRadius: 8},
         label: { 
           color: '#6D0475',
-          fontSize: 12,
+          fontSize: 16,
           fontWeight: 500
         },
         labelLine: {
           show: true,
-          length: 10,
-          length2: 5
+          length: 30,
+          length2: 10
         },
         data: [
           { value: data.ok, name: 'ОК', itemStyle: { color: '#10b981' } },
-          { value: data.degraded, name: 'Деградация', itemStyle: { color: '#f59e0b' } },
           { value: data.down, name: 'Недоступен', itemStyle: { color: '#ef4444' } }
         ]
       }
