@@ -1,6 +1,5 @@
 package taxisty.pingtower.backend.monitoring.repository;
 
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -25,10 +24,9 @@ public interface CheckResultRepository extends JpaRepository<CheckResult, Long> 
     List<CheckResult> findRecentByServiceId(@Param("serviceId") Long serviceId, @Param("since") LocalDateTime since);
     
     /**
-     * Find latest check result for a service
+     * Find latest check result for a service (single item)
      */
-    @Query("SELECT cr FROM CheckResult cr WHERE cr.serviceId = :serviceId ORDER BY cr.checkTime DESC")
-    Optional<CheckResult> findLatestByServiceId(@Param("serviceId") Long serviceId, Pageable pageable);
+    Optional<CheckResult> findFirstByServiceIdOrderByCheckTimeDesc(Long serviceId);
     
     /**
      * Find check results within time range for a service
