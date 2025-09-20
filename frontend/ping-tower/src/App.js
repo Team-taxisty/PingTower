@@ -1,12 +1,12 @@
 import { useMemo, useState, useEffect } from 'react';
 import Navigation from './components/Navigation';
 import Filters from './components/Filters';
-import CheckList from './components/CheckList'; // Updated import
-import AddCheckModal from './components/AddCheckModal'; // Updated import
-import EditCheckModal from './components/EditCheckModal'; // Updated import
+import CheckList from './components/CheckList'; // This will functionally act as ServiceList
+import AddCheckModal from './components/AddCheckModal'; // This will functionally act as AddServiceModal
+import EditCheckModal from './components/EditCheckModal'; // This will functionally act as EditServiceModal
 import AvailabilityLineChart from './components/charts/AvailabilityLineChart';
 import StatusPieChart from './components/charts/StatusPieChart';
-import CheckDetail from './pages/CheckDetail'; // Corrected import from ServiceDetail
+import CheckDetail from './pages/CheckDetail'; // This will functionally act as ServiceDetail
 import Alerts from './pages/Alerts';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
@@ -16,25 +16,38 @@ import api from './utils/api';
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('jwtToken') ? true : false);
   const [currentPage, setCurrentPage] = useState('dashboard');
-  const [selectedCheck, setSelectedCheck] = useState(null);
-  const [checks, setChecks] = useState([]); // Renamed from services
+  const [selectedService, setSelectedService] = useState(null); // Renamed from selectedCheck
+  const [services, setServices] = useState([]); // Renamed from checks, now holds service data from /monitoring/dashboard
 
   useEffect(() => {
     if (isLoggedIn) {
-      const fetchChecks = async () => {
+      const fetchDashboardData = async () => {
         try {
-          const response = await api('/v1/api/checks');
+          const response = await api('/monitoring/dashboard');
           if (response.ok) {
             const data = await response.json();
-            setChecks(data.items || []);
+            // Map new API response to existing 'checks' (now 'services') structure
+            const mappedServices = data.map(service => ({
+              id: service.serviceId, // Use serviceId as id
+              name: service.serviceName,
+              target: service.serviceUrl, // Map serviceUrl to target
+              status: service.status, // UP, DOWN, DEGRADED, UNKNOWN, ERROR
+              responseTimeMs: service.responseTimeMs,
+              lastChecked: service.lastChecked,
+              enabled: service.enabled,
+              // Defaulting type for now, will refine in Add/Edit modals
+              type: service.serviceType || 'HTTP',
+              interval_sec: service.checkIntervalMinutes * 60 || 60, // Assuming a default
+            }));
+            setServices(mappedServices || []);
           } else {
-            console.error('Failed to fetch checks', response.status);
+            console.error('Failed to fetch dashboard data', response.status);
           }
         } catch (error) {
-          console.error('Error fetching checks:', error);
+          console.error('Error fetching dashboard data:', error);
         }
       };
-      fetchChecks();
+      fetchDashboardData();
     }
   }, [isLoggedIn]);
 
@@ -47,86 +60,106 @@ function App() {
   ];
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingCheck, setEditingCheck] = useState(null); // Renamed from editingService
+  const [editingService, setEditingService] = useState(null); // Renamed from editingCheck
 
-  const filteredChecks = useMemo(() => {
-    if (filter === 'all') return checks;
-    return checks.filter((s) => s.status === filter);
-  }, [checks, filter]);
+  const filteredServices = useMemo(() => {
+    if (filter === 'all') return services;
+    // Lowercase comparison for status
+    return services.filter((s) => s.status.toLowerCase() === filter);
+  }, [services, filter]);
 
-  async function handleAddCheck(payload) { // Renamed from handleAddService
+  async function handleAddService(payload) { // Renamed from handleAddCheck
     try {
-      const response = await api('/v1/api/checks', {
+      const response = await api('/v1/api/services', { // Assuming /v1/api/services is the correct POST endpoint
         method: 'POST',
-        headers: { 'Idempotency-Key': `check-${Date.now()}` }, // Required by OpenAPI spec
-        body: JSON.stringify(payload),
+        headers: { 'Idempotency-Key': `service-${Date.now()}` },
+        body: JSON.stringify({
+          name: payload.name,
+          url: payload.target, // Map target to url
+          serviceType: payload.type, // Map type to serviceType
+          checkIntervalMinutes: payload.interval_sec / 60, // Convert seconds to minutes
+          // Add other required fields with default values or from payload if available
+          timeoutSeconds: 30, // Default value
+          httpMethod: 'GET', // Default value
+          expectedStatusCode: 200, // Default value
+        }),
       });
 
       if (response.ok) {
-        const newCheck = await response.json();
-        setChecks((prev) => [newCheck, ...prev]);
+        const newService = await response.json();
+        setServices((prev) => [newService, ...prev]);
         setIsModalOpen(false);
       } else {
-        console.error('Failed to add check', response.status);
+        console.error('Failed to add service', response.status);
       }
     } catch (error) {
-      console.error('Error adding check:', error);
+      console.error('Error adding service:', error);
     }
   }
 
-  function handleEditCheck(check) { // Renamed from handleEditService
-    setEditingCheck(check);
+  function handleEditService(service) { // Renamed from handleEditCheck
+    setEditingService(service);
     setIsEditModalOpen(true);
   }
 
-  async function handleUpdateCheck(updatedCheck) { // Renamed from handleUpdateService
+  async function handleUpdateService(updatedService) { // Renamed from handleUpdateCheck
     try {
-      const response = await api(`/v1/api/checks/${updatedCheck.id}`, { // Assuming PUT/PATCH endpoint exists
-        method: 'PUT', // Or PATCH depending on API implementation for update
-        body: JSON.stringify(updatedCheck),
+      const response = await api(`/v1/api/services/${updatedService.id}`, { // Assuming PUT for full update, or PATCH
+        method: 'PUT',
+        body: JSON.stringify({
+          name: updatedService.name,
+          url: updatedService.target,
+          serviceType: updatedService.type,
+          checkIntervalMinutes: updatedService.interval_sec / 60,
+          // Include other fields from the new API spec, possibly from existing updatedService object
+          timeoutSeconds: updatedService.timeoutSeconds || 30,
+          httpMethod: updatedService.httpMethod || 'GET',
+          expectedStatusCode: updatedService.expectedStatusCode || 200,
+          enabled: updatedService.enabled, // Assuming enabled can be updated
+        }),
       });
 
       if (response.ok) {
-        setChecks((prev) => prev.map(c => c.id === updatedCheck.id ? updatedCheck : c));
+        setServices((prev) => prev.map(s => s.id === updatedService.id ? updatedService : s));
         setIsEditModalOpen(false);
-        setEditingCheck(null);
+        setEditingService(null);
       } else {
-        console.error('Failed to update check', response.status);
+        console.error('Failed to update service', response.status);
       }
     } catch (error) {
-      console.error('Error updating check:', error);
+      console.error('Error updating service:', error);
     }
   }
 
-  async function handleDeleteCheck(checkId) { // Renamed from handleDeleteService
-    if (window.confirm('Удалить проверку?')) {
+  async function handleDeleteService(serviceId) { // Renamed from handleDeleteCheck
+    if (window.confirm('Удалить сервис?')) {
       try {
-        const response = await api(`/v1/api/checks/${checkId}`, {
+        const response = await api(`/v1/api/services/${serviceId}`, {
           method: 'DELETE',
         });
 
         if (response.ok) {
-          setChecks((prev) => prev.filter(c => c.id !== checkId));
-          if (selectedCheck && selectedCheck.id === checkId) {
-            setSelectedCheck(null);
+          setServices((prev) => prev.filter(s => s.id !== serviceId));
+          if (selectedService && selectedService.id === serviceId) {
+            setSelectedService(null);
             setCurrentPage('dashboard');
           }
         } else {
-          console.error('Failed to delete check', response.status);
+          console.error('Failed to delete service', response.status);
         }
       } catch (error) {
-        console.error('Error deleting check:', error);
+        console.error('Error deleting service:', error);
       }
     }
   }
 
-  function handleCheckClick(check) { // Renamed from handleServiceClick
-    setSelectedCheck(check);
-    setCurrentPage('service-detail'); // Still service-detail for now, will update later
+  function handleServiceClick(service) { // Renamed from handleCheckClick
+    setSelectedService(service);
+    setCurrentPage('service-detail');
   }
 
   function handleBackToDashboard() {
-    setSelectedCheck(null);
+    setSelectedService(null);
     setCurrentPage('dashboard');
   }
 
@@ -170,7 +203,7 @@ function App() {
                 style={addBtn}
                 onClick={() => setIsModalOpen(true)}
               >
-                Добавить новую проверку
+                Добавить новый сервис
               </button>
             </div>
 
@@ -178,28 +211,33 @@ function App() {
               <div style={{ marginBottom: 16, color: '#6D0475', fontSize: 18, fontWeight: 600 }}>Статусы</div>
               <div style={{ height: 250, overflow: 'hidden' }}>
                 <StatusPieChart data={{
-                  ok: checks.filter(c => c.status === 'ok').length,
-                  down: checks.filter(c => c.status === 'down').length,
+                  ok: services.filter(s => s.status === 'UP').length,
+                  down: services.filter(s =>
+                    s.status === 'DOWN' ||
+                    s.status === 'DEGRADED' ||
+                    s.status === 'UNKNOWN' ||
+                    s.status === 'ERROR'
+                  ).length,
                 }} />
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ margin: 0, color: '#6D0475', fontSize: 18, fontWeight: 600 }}>Проверки</h3>
+              <h3 style={{ margin: 0, color: '#6D0475', fontSize: 18, fontWeight: 600 }}>Сервисы</h3>
               <Filters activeFilter={filter} onChange={setFilter} />
             </div>
 
             <div style={{ background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 16, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' }}>
-              <CheckList checks={filteredChecks} onCheckClick={handleCheckClick} />
+              <CheckList checks={filteredServices} onCheckClick={handleServiceClick} />
             </div>
           </>
         );
       case 'service-detail':
-        return selectedCheck ? (
+        return selectedService ? (
           <CheckDetail 
-            check={selectedCheck} 
-            onEdit={handleEditCheck}
-            onDelete={handleDeleteCheck}
+            check={selectedService} 
+            onEdit={handleEditService}
+            onDelete={handleDeleteService}
             onBack={handleBackToDashboard}
           />
         ) : null;
@@ -226,17 +264,17 @@ function App() {
       <AddCheckModal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSubmit={handleAddCheck}
+        onSubmit={handleAddService}
       />
 
       <EditCheckModal
-        check={editingCheck}
+        check={editingService}
         open={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
-          setEditingCheck(null);
+          setEditingService(null);
         }}
-        onSubmit={handleUpdateCheck}
+        onSubmit={handleUpdateService}
       />
     </div>
   );

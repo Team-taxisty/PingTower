@@ -1,12 +1,15 @@
 function StatusBadge({ status }) {
   const { color, label, bgColor } = (function mapStatusToVisuals() {
     switch (status) {
-      case 'ok':
-        return { color: '#16a34a', label: 'ОК', bgColor: '#f0fdf4' };
-      case 'down':
-        return { color: '#dc2626', label: 'Недоступен', bgColor: '#fef2f2' };
+      case 'UP':
+        return { color: '#16a34a', label: 'UP', bgColor: '#f0fdf4' };
+      case 'DOWN':
+      case 'DEGRADED': // Теперь DEGRADED также отображается как DOWN
+      case 'UNKNOWN':  // Теперь UNKNOWN также отображается как DOWN
+      case 'ERROR':    // Теперь ERROR также отображается как DOWN
+        return { color: '#dc2626', label: 'DOWN', bgColor: '#fef2f2' };
       default:
-        return { color: '#6b7280', label: 'Неизвестно', bgColor: '#f9fafb' };
+        return { color: '#6b7280', label: 'UNKNOWN', bgColor: '#f9fafb' }; // Fallback for unexpected statuses
     }
   })();
 

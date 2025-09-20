@@ -38,7 +38,7 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
     return runsData.map(run => ({
       time: new Date(run.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       responseTime: run.latency_ms,
-      uptime: run.status === 'UP' ? 100 : (run.status === 'DEGRADED' ? 50 : 0), // Map status to uptime % for chart
+      uptime: run.status === 'UP' ? 100 : 0, // Map UP to 100%, others to 0%
     }));
   }, [runsData]);
 
@@ -55,7 +55,7 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
   }, [runsData]);
 
   const incidents = useMemo(() => {
-    // A simple way to detect incidents: when status changes from UP to DOWN/DEGRADED
+    // A simple way to detect incidents: when status changes from UP to DOWN (or DEGRADED, UNKNOWN, ERROR)
     const detectedIncidents = [];
     for (let i = 1; i < runsData.length; i++) {
       if (runsData[i].status !== 'UP' && runsData[i - 1].status === 'UP') {
@@ -63,8 +63,8 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
         detectedIncidents.push({
           id: runsData[i].id,
           startTime: new Date(runsData[i].started_at).toLocaleString(),
-          status: runsData[i].status,
-          description: `Service went from UP to ${runsData[i].status}`, // Simplified description
+          status: 'DOWN', // Consolidated to DOWN
+          description: `Service went from UP to DOWN`, // Simplified description
         });
       }
     }
@@ -102,15 +102,17 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
   };
 
   if (isLoadingRuns) {
-    return <div style={containerStyle}>Загрузка данных проверки...</div>;
+    return <div style={containerStyle}>Загрузка данных сервиса...</div>; // Changed text
   }
+
+  const currentStatus = check.status === 'UP' ? 'UP' : 'DOWN'; // Consolidate status for display
 
   return (
     <div style={containerStyle}>
       <div style={headerStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <button style={backBtn} onClick={onBack}>← Назад</button>
-          <h1 style={titleStyle}>Детали проверки: {check.name}</h1>
+          <h1 style={titleStyle}>Детали сервиса: {check.name}</h1> {/* Changed text */}
         </div>
         <div style={actionsStyle}>
           <button style={editBtn} onClick={() => onEdit(check)}>Редактировать</button>
@@ -168,8 +170,8 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
             </div>
             <div style={cardStyle}>
               <h4 style={{ margin: '0 0 8px 0', color: '#6D0475', fontSize: 12, fontWeight: 600 }}>Последний статус</h4>
-              <div style={{ fontSize: 24, fontWeight: 700, color: check.status === 'UP' ? '#10b981' : '#ef4444' }}>
-                {check.status}
+              <div style={{ fontSize: 24, fontWeight: 700, color: currentStatus === 'UP' ? '#10b981' : '#ef4444' }}>
+                {currentStatus}
               </div>
             </div>
             <div style={cardStyle}>
@@ -201,12 +203,12 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
                     <td style={tdStyle}>
                       <span style={{ 
                         padding: '2px 8px', 
-                        borderRadius: 12, 
-                        background: incident.status === 'UP' ? '#10b981' : (incident.status === 'DEGRADED' ? '#f59e0b' : '#ef4444'),
+                        borderRadius: 12,
+                        background: incident.status === 'UP' ? '#10b981' : '#ef4444', // Consolidated to UP/DOWN colors
                         color: '#fff',
                         fontSize: 12
                       }}>
-                        {incident.status === 'UP' ? 'UP' : (incident.status === 'DEGRADED' ? 'DEGRADED' : 'DOWN')}
+                        {incident.status}
                       </span>
                     </td>
                     <td style={tdStyle}>{incident.description}</td>
