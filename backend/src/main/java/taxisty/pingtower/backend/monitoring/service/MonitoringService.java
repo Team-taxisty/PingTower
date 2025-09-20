@@ -137,7 +137,7 @@ public class MonitoringService {
      * Get latest check result for a service
      */
     public Optional<CheckResult> getLatestCheckResult(Long serviceId) {
-        return checkResultRepository.findLatestByServiceId(serviceId, PageRequest.of(0, 1))
+        return checkResultRepository.findFirstByServiceIdOrderByCheckTimeDesc(serviceId)
                 .or(() -> {
                     // Fallback to ClickHouse
                     LocalDateTime oneDayAgo = LocalDateTime.now().minusDays(1);

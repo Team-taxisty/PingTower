@@ -30,8 +30,9 @@ public class ClickHouseConfig {
     @Value("${monitoring.clickhouse.driver-class-name:com.clickhouse.jdbc.ClickHouseDriver}")
     private String driverClassName;
     
-    @Bean(name = "clickHouseDataSource")
-    public DataSource clickHouseDataSource() {
+    // Do NOT expose ClickHouse DataSource as a Spring bean to avoid
+    // interfering with Spring Boot's primary JPA DataSource (PostgreSQL).
+    private DataSource clickHouseDataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName(driverClassName);
         dataSource.setUrl(clickHouseUrl);
