@@ -1,4 +1,6 @@
-function Navigation({ currentPage, onNavigate }) {
+import { useState } from 'react';
+
+function Navigation({ currentPage, onNavigate, onLogout }) {
   const navStyle = {
     background: '#ffffff',
     border: '1px solid #E5B8E8',
@@ -46,6 +48,26 @@ function Navigation({ currentPage, onNavigate }) {
     fontFamily: 'Inter'
   });
 
+  const logoutButtonStyle = {
+    padding: '8px 16px',
+    borderRadius: 8,
+    border: '1px solid #E5B8E8',
+    background: 'transparent',
+    color: '#dc2626', // Red color for logout
+    cursor: 'pointer',
+    fontSize: 14,
+    fontWeight: 500,
+    transition: 'all 0.2s ease',
+    fontFamily: 'Inter',
+  };
+
+  const logoutButtonHoverStyle = {
+    background: '#fef2f2',
+    color: '#991b1b',
+  };
+
+  const [isLogoutHovered, setIsLogoutHovered] = useState(false);
+
   const navItems = [
     { id: 'dashboard', label: 'Дашборд' },
     { id: 'alerts', label: 'Уведомления' },
@@ -73,6 +95,14 @@ function Navigation({ currentPage, onNavigate }) {
           {item.label}
         </button>
       ))}
+      <button
+        style={isLogoutHovered ? { ...logoutButtonStyle, ...logoutButtonHoverStyle } : logoutButtonStyle}
+        onMouseEnter={() => setIsLogoutHovered(true)}
+        onMouseLeave={() => setIsLogoutHovered(false)}
+        onClick={onLogout}
+      >
+        Выйти
+      </button>
     </nav>
   );
 }

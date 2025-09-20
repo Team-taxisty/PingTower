@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../utils/api';
 
 function Auth({ onAuthSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -11,8 +12,14 @@ function Auth({ onAuthSuccess }) {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!isLogin && !name.trim()) {
-      newErrors.name = 'Имя обязательно';
+    if (!isLogin) {
+      if (!name.trim()) {
+        newErrors.name = 'Имя пользователя обязательно';
+      } else if (name.trim().length < 3) {
+        newErrors.name = 'Имя пользователя должно быть не менее 3 символов';
+      } else if (name.trim().length > 50) {
+        newErrors.name = 'Имя пользователя должно быть не более 50 символов';
+      }
     }
     if (!email.trim()) {
       newErrors.email = 'Email обязателен';
@@ -43,32 +50,32 @@ function Auth({ onAuthSuccess }) {
     if (validateForm()) {
       setIsLoading(true);
       try {
-        // Simulate API call
-        const response = await new Promise(resolve => setTimeout(() => {
-          if (isLogin) {
-            // Simulate login success/failure
-            if (email === 'test@example.com' && password === 'password') {
-              resolve({ status: 200, data: { message: 'Вход выполнен успешно!' } });
-            } else {
-              resolve({ status: 401, data: { message: 'Неверный Email или пароль.' } });
-            }
-          } else {
-            // Simulate registration success/failure
-            if (name && email && password) {
-              resolve({ status: 200, data: { message: 'Регистрация прошла успешно!' } });
-            } else {
-              resolve({ status: 400, data: { message: 'Ошибка регистрации. Пожалуйста, заполните все поля.' } });
-            }
-          }
-        }, 1500));
+        const url = isLogin ? '/v1/api/auth/login' : '/v1/api/auth/register';
+        const body = isLogin ? { username: email, password } : { username: name, email, password };
 
-        if (response.status === 200) {
-          setMessage({ type: 'success', text: response.data.message });
-          onAuthSuccess(); // Call onAuthSuccess on successful login/registration
+        const response = await api(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setMessage({ type: 'success', text: isLogin ? 'Вход выполнен успешно!' : 'Регистрация прошла успешно!' });
+          // Save JWT token and user details
+          localStorage.setItem('jwtToken', data.token);
+          localStorage.setItem('userId', data.id);
+          localStorage.setItem('username', data.username);
+          localStorage.setItem('email', data.email);
+          onAuthSuccess();
         } else {
-          setMessage({ type: 'error', text: response.data.message });
+          setMessage({ type: 'error', text: data.message || 'Произошла ошибка авторизации.' });
         }
       } catch (error) {
+        console.error('API Error:', error);
         setMessage({ type: 'error', text: 'Произошла ошибка. Пожалуйста, попробуйте снова.' });
       } finally {
         setIsLoading(false);
@@ -154,7 +161,7 @@ function Auth({ onAuthSuccess }) {
       <form onSubmit={handleSubmit}>
         {!isLogin && (
           <div style={formGroupStyle}>
-            <label htmlFor="name" style={labelStyle}>Имя</label>
+            <label htmlFor="name" style={labelStyle}>Имя пользователя</label>
             <input
               type="text"
               id="name"
