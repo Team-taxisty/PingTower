@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import taxisty.pingtower.backend.api.dto.TestNotificationRequest;
+import taxisty.pingtower.backend.api.dto.NotificationRequest;
 import taxisty.pingtower.backend.notifications.repo.InMemoryNotificationRepository;
 import taxisty.pingtower.backend.notifications.service.NotificationService;
 import taxisty.pingtower.backend.storage.dto.CreateNotificationChannelRequest;
@@ -69,5 +70,64 @@ public class NotificationsController {
         );
         NotificationDelivery d = service.sendToChannel(alert, ch);
         return ResponseEntity.ok(d);
+    }
+
+    @PostMapping("/send")
+    public ResponseEntity<Map<String, Object>> sendNotification(@Valid @RequestBody NotificationRequest req) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            // Создаем Alert из запроса
+            Alert alert = new Alert(
+                    0L,
+                    0L,
+                    0L,
+                    req.message(),
+                    req.severity() != null ? req.severity() : "INFO",
+                    req.status() != null && req.status().equals("up"),
+                    LocalDateTime.now(),
+                    null,
+                    Map.of(
+                        "username", req.username(),
+                        "service_name", req.serviceName(),
+                        "service_url", req.serviceUrl() != null ? req.serviceUrl() : "",
+                        "status", req.status() != null ? req.status() : "down"
+                    )
+            );
+            
+            // Находим канал уведомлений для пользователя
+            NotificationChannel channel = findChannelForUser(req.username());
+            if (channel == null) {
+                response.put("success", false);
+                response.put("error", "No notification channel found for user: " + req.username());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+            
+            // Отправляем уведомление
+            NotificationDelivery delivery = service.sendToChannel(alert, channel);
+            
+            response.put("success", "SUCCESS".equals(delivery.status()));
+            response.put("delivery_id", delivery.id());
+            response.put("message", "Notification sent successfully");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("error", "Failed to send notification: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+    
+    private NotificationChannel findChannelForUser(String username) {
+        // Ищем канал уведомлений для пользователя
+        // Сначала пробуем найти Python Bot канал, затем Telegram
+        return repo.listChannels().stream()
+                .filter(ch -> ch.type().equals("PYTHON_BOT"))
+                .findFirst()
+                .orElse(repo.listChannels().stream()
+                        .filter(ch -> ch.type().equals("TELEGRAM"))
+                        .findFirst()
+                        .orElse(null));
     }
 }
