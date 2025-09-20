@@ -15,7 +15,6 @@ import taxisty.pingtower.backend.storage.model.NotificationDelivery;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 public class NotificationService {

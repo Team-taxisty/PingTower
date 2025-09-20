@@ -29,6 +29,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     // JavaMail for SMTP email provider
     implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    
+    // ClickHouse driver for time series analytics
+    implementation 'com.clickhouse:clickhouse-jdbc:0.6.5'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
     
     runtimeOnly 'org.postgresql:postgresql'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
