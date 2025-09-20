@@ -16,26 +16,12 @@ spring:
 
 # OpenAPI/Swagger configuration
 springdoc:
-  # api-docs:
-  #   path: /v3/api-docs
-  #   enabled: true
+  api-docs:
+    path: /v3/api-docs
   swagger-ui:
-    path: /swagger-ui.html
     enabled: true
-    operationsSorter: method
-    tagsSorter: alpha
-    disable-swagger-default-url: true
-  info:
-    title: PingTower API
-    version: 1.0.0
-    description: |
-      PingTower is a comprehensive monitoring and alerting system that helps you 
-      keep track of your services' health and availability. This API provides 
-      endpoints for managing monitored services, viewing check results, 
-      configuring alerts, and managing notification channels.
-    contact:
-      name: Team Taxisty
-      url: https://github.com/Team-taxisty/PingTower
+    path: /swagger-ui
+    url: /v3/api-docs
 
 # PingTower Scheduler Configuration
 pingtower:
