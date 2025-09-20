@@ -69,7 +69,7 @@ public class WebhookProvider implements ChannelProvider {
             Mono<ClientResponse> respMono = spec.bodyValue(body).exchangeToMono(Mono::just);
             ClientResponse resp = respMono.block(Duration.ofSeconds(15));
             if (resp == null) return new DeliveryResult(false, null, "No response", null);
-            int code = resp.rawStatusCode();
+            int code = resp.statusCode().value();
             if (code >= 200 && code < 300) return new DeliveryResult(true, code, null, null);
             Long retry = null;
             if (code == 429) {

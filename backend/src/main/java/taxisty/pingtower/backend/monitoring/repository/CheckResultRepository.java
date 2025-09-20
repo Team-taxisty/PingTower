@@ -76,4 +76,84 @@ public interface CheckResultRepository extends JpaRepository<CheckResult, Long> 
      */
     @Query("SELECT DISTINCT cr.serviceId FROM CheckResult cr")
     List<Long> findAllServiceIds();
+    
+    // Additional methods needed by MonitoringDataController
+    
+    /**
+     * Find recent successful results for a service with pagination
+     */
+    @Query("SELECT cr FROM CheckResult cr WHERE cr.serviceId = :serviceId AND cr.isSuccessful = true AND cr.checkTime >= :since ORDER BY cr.checkTime DESC")
+    org.springframework.data.domain.Page<CheckResult> findRecentSuccessByServiceId(
+            @Param("serviceId") Long serviceId, 
+            @Param("since") LocalDateTime since, 
+            org.springframework.data.domain.Pageable pageable);
+    
+    /**
+     * Find recent failures for a service with pagination
+     */
+    @Query("SELECT cr FROM CheckResult cr WHERE cr.serviceId = :serviceId AND cr.isSuccessful = false AND cr.checkTime >= :since ORDER BY cr.checkTime DESC")
+    org.springframework.data.domain.Page<CheckResult> findRecentFailuresByServiceId(
+            @Param("serviceId") Long serviceId, 
+            @Param("since") LocalDateTime since, 
+            org.springframework.data.domain.Pageable pageable);
+    
+    /**
+     * Find check results by service ID and time range with pagination
+     */
+    @Query("SELECT cr FROM CheckResult cr WHERE cr.serviceId = :serviceId AND cr.checkTime >= :since ORDER BY cr.checkTime DESC")
+    org.springframework.data.domain.Page<CheckResult> findByServiceIdAndCheckedAtAfterOrderByCheckedAtDesc(
+            @Param("serviceId") Long serviceId, 
+            @Param("since") LocalDateTime since, 
+            org.springframework.data.domain.Pageable pageable);
+    
+    /**
+     * Find check results by service ID within date range with pagination
+     */
+    @Query("SELECT cr FROM CheckResult cr WHERE cr.serviceId = :serviceId AND cr.checkTime BETWEEN :start AND :end ORDER BY cr.checkTime DESC")
+    org.springframework.data.domain.Page<CheckResult> findByServiceIdAndCheckedAtBetweenOrderByCheckedAtDesc(
+            @Param("serviceId") Long serviceId, 
+            @Param("start") LocalDateTime start, 
+            @Param("end") LocalDateTime end, 
+            org.springframework.data.domain.Pageable pageable);
+    
+    /**
+     * Find recent successful results with pagination
+     */
+    @Query("SELECT cr FROM CheckResult cr WHERE cr.isSuccessful = true AND cr.checkTime >= :since ORDER BY cr.checkTime DESC")
+    org.springframework.data.domain.Page<CheckResult> findRecentSuccessfulResults(
+            @Param("since") LocalDateTime since, 
+            org.springframework.data.domain.Pageable pageable);
+    
+    /**
+     * Find recent failed results with pagination  
+     */
+    @Query("SELECT cr FROM CheckResult cr WHERE cr.isSuccessful = false AND cr.checkTime >= :since ORDER BY cr.checkTime DESC")
+    org.springframework.data.domain.Page<CheckResult> findRecentFailedResults(
+            @Param("since") LocalDateTime since, 
+            org.springframework.data.domain.Pageable pageable);
+    
+    /**
+     * Find all results after specific time with pagination
+     */
+    @Query("SELECT cr FROM CheckResult cr WHERE cr.checkTime >= :since ORDER BY cr.checkTime DESC")
+    org.springframework.data.domain.Page<CheckResult> findByCheckedAtAfterOrderByCheckedAtDesc(
+            @Param("since") LocalDateTime since, 
+            org.springframework.data.domain.Pageable pageable);
+    
+    /**
+     * Count recent failures
+     */
+    @Query("SELECT COUNT(cr) FROM CheckResult cr WHERE cr.isSuccessful = false AND cr.checkTime >= :since")
+    Long countRecentFailures(@Param("since") LocalDateTime since);
+    
+    /**
+     * Count recent checks
+     */
+    @Query("SELECT COUNT(cr) FROM CheckResult cr WHERE cr.checkTime >= :since")
+    Long countRecentChecks(@Param("since") LocalDateTime since);
+    
+    /**
+     * Find the most recent check result for a service
+     */
+    Optional<CheckResult> findTopByServiceIdOrderByCheckTimeDesc(Long serviceId);
 }

@@ -51,4 +51,31 @@ public interface MonitoredServiceRepository extends JpaRepository<MonitoredServi
      */
     @Query("SELECT ms FROM MonitoredService ms WHERE ms.isActive = true AND LOWER(ms.name) LIKE LOWER(CONCAT('%', :name, '%'))")
     List<MonitoredService> findByNameContainingIgnoreCase(@Param("name") String name);
+    
+    // Additional methods needed by the controller
+    
+    /**
+     * Find services by enabled status with pagination
+     */
+    @Query("SELECT ms FROM MonitoredService ms WHERE ms.isActive = :enabled")
+    org.springframework.data.domain.Page<MonitoredService> findByEnabled(
+            @Param("enabled") Boolean enabled, 
+            org.springframework.data.domain.Pageable pageable);
+    
+    /**
+     * Find services by name pattern with pagination
+     */
+    @Query("SELECT ms FROM MonitoredService ms WHERE LOWER(ms.name) LIKE LOWER(CONCAT('%', :name, '%'))")
+    org.springframework.data.domain.Page<MonitoredService> findByNameContainingIgnoreCase(
+            @Param("name") String name, 
+            org.springframework.data.domain.Pageable pageable);
+    
+    /**
+     * Find services by enabled status and name pattern with pagination
+     */
+    @Query("SELECT ms FROM MonitoredService ms WHERE ms.isActive = :enabled AND LOWER(ms.name) LIKE LOWER(CONCAT('%', :name, '%'))")
+    org.springframework.data.domain.Page<MonitoredService> findByEnabledAndNameContainingIgnoreCase(
+            @Param("enabled") Boolean enabled, 
+            @Param("name") String name, 
+            org.springframework.data.domain.Pageable pageable);
 }
