@@ -31,7 +31,21 @@ jobs:
       run: |
         cd frontend/ping-tower
         npm ci
-        CI=false npm run build
-        
-    - name: Success
-      run: echo "✅ Build completed!"
+        npm run build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: 203.81.208.67
+        username: ubuntu
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /opt/pingtower || (mkdir -p /opt/pingtower && cd /opt/pingtower)
+          git pull origin main || git clone https://github.com/Team-taxisty/PingTower.git .
+          cd docker
+          docker-compose down || true
+          docker-compose up -d --build
