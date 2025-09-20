@@ -54,6 +54,11 @@
 
 ---
 
+<h1 align="center">Архитектура системы</h1>
+
+<img width="2581" height="1641" alt="PingTowerC4Diagram drawio" src="https://github.com/user-attachments/assets/e888f90c-12aa-476b-a8a9-ba1d4e8c2ad6" />
+
+
 <h1 align="center">Use Cases — PingTower</h1>
 
 Ниже приведены примеры сценариев использования PingTower.
