@@ -3,41 +3,41 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import api from '../utils/api';
 
 function Reports() {
-  const [period, setPeriod] = useState('week'); // Keep period selection if needed for future filtering
-  const [checks, setChecks] = useState([]);
-  const [selectedCheckId, setSelectedCheckId] = useState('');
-  const [reportData, setReportData] = useState([]); // Stores runs data
-  const [isLoadingChecks, setIsLoadingChecks] = useState(true);
+  const [period, setPeriod] = useState('week');
+  const [services, setServices] = useState([]); // Renamed from checks
+  const [selectedServiceId, setSelectedServiceId] = useState(''); // Renamed from selectedCheckId
+  const [reportData, setReportData] = useState([]);
+  const [isLoadingServices, setIsLoadingServices] = useState(true); // Renamed from isLoadingChecks
   const [isLoadingReport, setIsLoadingReport] = useState(false);
 
   useEffect(() => {
-    const fetchChecks = async () => {
-      setIsLoadingChecks(true);
+    const fetchServices = async () => { // Renamed from fetchChecks
+      setIsLoadingServices(true);
       try {
-        const response = await api('/v1/api/checks');
+        const response = await api('/v1/api/services'); // Updated endpoint
         if (response.ok) {
           const data = await response.json();
-          setChecks(data.items || []);
+          setServices(data.items || []);
           if (data.items.length > 0) {
-            setSelectedCheckId(data.items[0].id); // Select first check by default
+            setSelectedServiceId(data.items[0].id); // Select first service by default
           }
         } else {
-          console.error('Failed to fetch checks', response.status);
+          console.error('Failed to fetch services', response.status);
         }
       } catch (error) {
-        console.error('Error fetching checks:', error);
+        console.error('Error fetching services:', error);
       } finally {
-        setIsLoadingChecks(false);
+        setIsLoadingServices(false);
       }
     };
-    fetchChecks();
+    fetchServices();
   }, []);
 
   useEffect(() => {
-    if (selectedCheckId && !isLoadingChecks) {
+    if (selectedServiceId && !isLoadingServices) {
       handleGenerateReport();
     }
-  }, [selectedCheckId, period, isLoadingChecks]); // Regenerate report when check or period changes
+  }, [selectedServiceId, period, isLoadingServices]);
 
   const handleGenerateReport = async () => {
     setIsLoadingReport(true);
@@ -52,7 +52,7 @@ function Reports() {
         fromDate.setMonth(now.getMonth() - 1);
       }
 
-      const response = await api(`/v1/api/runs?check_id=${selectedCheckId}&from=${fromDate.toISOString()}&to=${now.toISOString()}`);
+      const response = await api(`/v1/api/runs?service_id=${selectedServiceId}&from=${fromDate.toISOString()}&to=${now.toISOString()}`); // Updated parameter
       if (response.ok) {
         const data = await response.json();
         setReportData(data.items || []);
@@ -81,10 +81,11 @@ function Reports() {
   }, [reportData]);
 
   const incidentCount = useMemo(() => {
-    // Simple incident count: when status changes from UP to DOWN/DEGRADED
     let count = 0;
     for (let i = 1; i < reportData.length; i++) {
-      if (reportData[i].status !== 'UP' && reportData[i - 1].status === 'UP') {
+      const currentStatus = reportData[i].status;
+      const previousStatus = reportData[i - 1].status;
+      if (currentStatus !== 'UP' && previousStatus === 'UP') {
         count++;
       }
     }
@@ -99,7 +100,7 @@ function Reports() {
   const buttonStyle = { padding: '10px 16px', borderRadius: 8, border: '1px solid #6D0475', background: '#6D0475', color: '#ffffff', cursor: 'pointer', fontSize: '14px', fontWeight: 500, transition: 'all 0.2s ease' };
   const cardStyle = { background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, marginBottom: 16, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' };
 
-  const metricsStyle = { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }; // Changed to 3 columns
+  const metricsStyle = { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 };
 
   const metricCardStyle = { background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, textAlign: 'center', boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' };
   const metricValueStyle = { fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: '8px 0' };
@@ -116,53 +117,53 @@ function Reports() {
     }));
   }, [reportData]);
 
-  const selectedCheckName = useMemo(() => {
-    const check = checks.find(c => c.id === selectedCheckId);
-    return check ? check.name : 'Не выбрано';
-  }, [checks, selectedCheckId]);
+  const selectedServiceName = useMemo(() => { // Renamed from selectedCheckName
+    const service = services.find(s => s.id === selectedServiceId);
+    return service ? service.name : 'Не выбрано';
+  }, [services, selectedServiceId]);
 
   return (
     <div style={containerStyle}>
       <div style={headerStyle}>
-        <h1 style={titleStyle}>Отчёты для: {selectedCheckName}</h1>
+        <h1 style={titleStyle}>Отчёты для: {selectedServiceName}</h1>
         <div style={controlsStyle}>
-          <select style={selectStyle} value={period} onChange={(e) => setPeriod(e.target.value)} disabled={isLoadingChecks || isLoadingReport}>
+          <select style={selectStyle} value={period} onChange={(e) => setPeriod(e.target.value)} disabled={isLoadingServices || isLoadingReport}>
             <option value="day">День</option>
             <option value="week">Неделя</option>
             <option value="month">Месяц</option>
           </select>
-          <select style={selectStyle} value={selectedCheckId} onChange={(e) => setSelectedCheckId(e.target.value)} disabled={isLoadingChecks || isLoadingReport}>
-            {isLoadingChecks ? (
-              <option value="">Загрузка проверок...</option>
+          <select style={selectStyle} value={selectedServiceId} onChange={(e) => setSelectedServiceId(e.target.value)} disabled={isLoadingServices || isLoadingReport}>
+            {isLoadingServices ? (
+              <option value="">Загрузка сервисов...</option>
             ) : (
-              checks.length > 0 ? (
-                checks.map(check => (
-                  <option key={check.id} value={check.id}>{check.name}</option>
+              services.length > 0 ? (
+                services.map(service => (
+                  <option key={service.id} value={service.id}>{service.name}</option>
                 ))
               ) : (
-                <option value="">Нет доступных проверок</option>
+                <option value="">Нет доступных сервисов</option>
               )
             )}
           </select>
-          <button style={buttonStyle} onClick={handleGenerateReport} disabled={!selectedCheckId || isLoadingReport}>
+          <button style={buttonStyle} onClick={handleGenerateReport} disabled={!selectedServiceId || isLoadingReport}>
             {isLoadingReport ? 'Генерация...' : 'Сгенерировать отчет'}
           </button>
         </div>
       </div>
 
-      {selectedCheckId && (reportData.length > 0 || isLoadingReport) ? (
+      {selectedServiceId && (reportData.length > 0 || isLoadingReport) ? (
         <>
           <div style={metricsStyle}>
             <div style={metricCardStyle}>
-              <div style={metricLabelStyle}>Аптайм (24ч)</div>
+              <div style={metricLabelStyle}>Аптайм ({period === 'day' ? '24ч' : period === 'week' ? '7д' : '30д'})</div>
               <div style={metricValueStyle}>{uptimePercentage}%</div>
             </div>
             <div style={metricCardStyle}>
-              <div style={metricLabelStyle}>Среднее время отклика (24ч)</div>
+              <div style={metricLabelStyle}>Среднее время отклика ({period === 'day' ? '24ч' : period === 'week' ? '7д' : '30д'})</div>
               <div style={metricValueStyle}>{averageResponseTime}ms</div>
             </div>
             <div style={metricCardStyle}>
-              <div style={metricLabelStyle}>Инциденты (24ч)</div>
+              <div style={metricLabelStyle}>Инциденты ({period === 'day' ? '24ч' : period === 'week' ? '7д' : '30д'})</div>
               <div style={metricValueStyle}>{incidentCount}</div>
             </div>
           </div>
@@ -199,14 +200,14 @@ function Reports() {
                       <td style={tdStyle}>{new Date(run.started_at).toLocaleString()}</td>
                       <td style={tdStyle}>{run.latency_ms}</td>
                       <td style={tdStyle}>
-                        <span style={{ 
-                          padding: '2px 8px', 
-                          borderRadius: 12, 
-                          background: run.status === 'UP' ? '#10b981' : (run.status === 'DEGRADED' ? '#f59e0b' : '#ef4444'),
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: 12,
+                          background: run.status === 'UP' ? '#10b981' : '#ef4444',
                           color: '#fff',
                           fontSize: 12
                         }}>
-                          {run.status}
+                          {run.status === 'UP' ? 'UP' : 'DOWN'}
                         </span>
                       </td>
                     </tr>
@@ -219,7 +220,7 @@ function Reports() {
       ) : (
         <div style={cardStyle}>
           <p style={{ color: '#6b7280', fontSize: '14px' }}>
-            {isLoadingReport ? 'Генерация отчета...' : 'Выберите проверку и период для генерации отчета.'}
+            {isLoadingReport ? 'Генерация отчета...' : 'Выберите сервис и период для генерации отчета.'}
           </p>
         </div>
       )}
