@@ -1,43 +1,43 @@
-# Storage Package
+# Пакет Storage
 
-This package contains the data model definitions and data transfer objects for the PingTower monitoring system.
+Этот пакет содержит определения моделей данных и объекты передачи данных (DTO) для системы мониторинга PingTower.
 
-## Structure
+## Структура
 
-- `model/` - Entity models representing persistent data structures
-- `dto/` - Data Transfer Objects for API requests and responses
+- `model/` — модели сущностей, представляющие постоянные структуры данных
+- `dto/` — объекты передачи данных (DTO) для запросов и ответов API
 
-## Entity Models
+## Модели сущностей
 
-### Core Entities
-- **MonitoredService** - Web services/resources being monitored with configuration settings
-- **CheckSchedule** - Cron-based scheduling configuration for monitoring checks  
-- **CheckResult** - Results and metrics from availability checks
-- **ServiceMetrics** - Aggregated performance statistics for reporting
+### Базовые сущности
+- **MonitoredService** — веб‑сервисы/ресурсы, находящиеся под мониторингом, с настройками конфигурации
+- **CheckSchedule** — конфигурация расписания проверок на основе cron  
+- **CheckResult** — результаты и метрики проверок доступности
+- **ServiceMetrics** — агрегированная статистика производительности для отчётности
 
-### Alert System
-- **AlertRule** - Threshold-based alert configuration and conditions
-- **Alert** - Triggered alert instances with resolution tracking
-- **NotificationChannel** - Delivery method configuration (email, Telegram, webhooks)
-- **NotificationDelivery** - Audit trail of notification attempts and status
+### Система оповещений
+- **AlertRule** — конфигурация и условия оповещений на основе пороговых значений
+- **Alert** — срабатывания оповещений с отслеживанием их разрешения
+- **NotificationChannel** — конфигурация способов доставки (email, Telegram, webhooks)
+- **NotificationDelivery** — журнал попыток доставки уведомлений и их статусов
 
-### User Management
-- **User** - System users with role-based access control
+### Управление пользователями
+- **User** — пользователи системы с управлением доступом на основе ролей
 
-## Data Transfer Objects
+## Объекты передачи данных (DTO)
 
-### Request DTOs
-- **CreateServiceRequest** - Service creation and configuration
-- **CreateScheduleRequest** - Monitoring schedule setup
-- **CreateAlertRuleRequest** - Alert rule configuration
-- **CreateNotificationChannelRequest** - Notification channel setup
-- **MetricsRequest** - Analytics and reporting queries
+### DTO запросов
+- **CreateServiceRequest** — создание и конфигурация сервиса
+- **CreateScheduleRequest** — настройка расписания мониторинга
+- **CreateAlertRuleRequest** — настройка правила оповещения
+- **CreateNotificationChannelRequest** — настройка канала уведомлений
+- **MetricsRequest** — запросы аналитики и отчётности
 
-### Response DTOs  
-- **ServiceResponse** - Service information for API responses
-- **CheckResultResponse** - Check outcome data
-- **AlertResponse** - Alert details and status
-- **DashboardResponse** - Dashboard overview statistics
-- **MetricsResponse** - Performance analytics with time series data
+### DTO ответов  
+- **ServiceResponse** — информация о сервисе для ответов API
+- **CheckResultResponse** — данные о результатах проверки
+- **AlertResponse** — детали и статус оповещения
+- **DashboardResponse** — сводная статистика для дашборда
+- **MetricsResponse** — аналитика производительности с временными рядами
 
-All models use Java records for immutability and conciseness. Timestamps use LocalDateTime for consistency.
+Все модели используют Java records для неизменяемости и лаконичности. Для отметок времени используется LocalDateTime для единообразия.
