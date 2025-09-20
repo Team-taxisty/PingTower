@@ -1,68 +1,123 @@
 version: '3.8'
 
 services:
+  # PostgreSQL для хранения данных мониторинга
   postgres:
     image: postgres:15-alpine
-    container_name: pingtower-postgres-dev
+    container_name: pingtower-postgres
+    ports: ["5433:5432"]
     environment:
       POSTGRES_DB: monitoring
       POSTGRES_USER: monitoring
       POSTGRES_PASSWORD: dev123
     volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      # инициализация БД
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U monitoring -d monitoring"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
-      - pingtower-dev-network
+      - pingtower-network
 
+  # ClickHouse для аналитики и временных рядов
   clickhouse:
     image: clickhouse/clickhouse-server:latest
-    container_name: pingtower-clickhouse-dev
-    environment:
-      CLICKHOUSE_DB: monitoring
-      CLICKHOUSE_USER: monitoring
-      CLICKHOUSE_PASSWORD: dev123
+    container_name: pingtower-clickhouse
+    ports: ["8123:8123"]
     volumes:
-      - clickhouse_dev_data:/var/lib/clickhouse
-    ports:
-      - "8123:8123"
+      - clickhouse_data:/var/lib/clickhouse
+    healthcheck:
+      # Проверка доступности через HTTP ping endpoint
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
-      - pingtower-dev-network
+      - pingtower-network
 
+  # MailHog для тестирования email уведомлений
   mailhog:
     image: mailhog/mailhog:latest
-    container_name: pingtower-mailhog-dev
-    ports:
-      - "1025:1025"
-      - "8025:8025"
+    container_name: pingtower-mailhog
+    ports: 
+      - "1025:1025"  # SMTP порт для отправки писем
+      - "8025:8025"  # Web UI для просмотра писем
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8025"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
-      - pingtower-dev-network
+      - pingtower-network
 
+  # Backend Spring Boot приложение
   backend:
     build:
       context: ../backend
       dockerfile: Dockerfile
-    container_name: pingtower-backend-dev
+    container_name: pingtower-backend
     environment:
-      SPRING_PROFILES_ACTIVE: dev
+      SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/monitoring
       SPRING_DATASOURCE_USERNAME: monitoring
       SPRING_DATASOURCE_PASSWORD: dev123
       SPRING_MAIL_HOST: mailhog
       SPRING_MAIL_PORT: 1025
-    ports:
-      - "8080:8080"
     depends_on:
-      - postgres
-      - clickhouse
-      - mailhog
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      mailhog:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/v1/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
-      - pingtower-dev-network
+      - pingtower-network
+
+  # Frontend React приложение
+  frontend:
+    build:
+      context: ../frontend/ping-tower
+      dockerfile: Dockerfile
+    container_name: pingtower-frontend
+    depends_on:
+      - backend
+    networks:
+      - pingtower-network
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: pingtower-nginx
+    ports: 
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+      - frontend
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - pingtower-network
 
 volumes:
-  postgres_dev_data:
-  clickhouse_dev_data:
+  postgres_data:
+  clickhouse_data:
 
 networks:
-  pingtower-dev-network:
+  pingtower-network:
     driver: bridge
