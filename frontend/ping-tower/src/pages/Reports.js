@@ -98,7 +98,9 @@ function Reports() {
   const selectStyle = { padding: '10px 12px', borderRadius: 8, border: '1px solid #E5B8E8', background: '#ffffff', color: '#1a1a1a', fontSize: '14px' };
   const buttonStyle = { padding: '10px 16px', borderRadius: 8, border: '1px solid #6D0475', background: '#6D0475', color: '#ffffff', cursor: 'pointer', fontSize: '14px', fontWeight: 500, transition: 'all 0.2s ease' };
   const cardStyle = { background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, marginBottom: 16, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' };
+
   const metricsStyle = { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }; // Changed to 3 columns
+
   const metricCardStyle = { background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, textAlign: 'center', boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' };
   const metricValueStyle = { fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: '8px 0' };
   const metricLabelStyle = { fontSize: 12, color: '#6D0475', fontWeight: 600 };
