@@ -48,9 +48,24 @@ public class MonitoredService {
     @Column(name = "is_active")
     private boolean isActive = true;
     
-    // Additional fields for enhanced monitoring configuration
     @Column(name = "type", length = 50)
     private String type = "HTTP";
+    
+    @Column(name = "service_type", length = 10)
+    private String serviceType = "PING";
+    
+    @Column(name = "request_body", columnDefinition = "TEXT")
+    private String requestBody;
+    
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "query_params", columnDefinition = "json")
+    private Map<String, String> queryParams = new HashMap<>();
+    
+    @Column(name = "expected_response_body", columnDefinition = "TEXT")
+    private String expectedResponseBody;
+    
+    @Column(name = "is_alive")
+    private boolean isAlive = true;
     
     @Column(name = "check_interval_minutes")
     private Integer checkIntervalMinutes = 5;
@@ -152,6 +167,21 @@ public class MonitoredService {
     public Integer getExpectedStatusCode() { return expectedStatusCode; }
     public void setExpectedStatusCode(Integer expectedStatusCode) { this.expectedStatusCode = expectedStatusCode; }
     
+    public String getServiceType() { return serviceType; }
+    public void setServiceType(String serviceType) { this.serviceType = serviceType; }
+    
+    public String getRequestBody() { return requestBody; }
+    public void setRequestBody(String requestBody) { this.requestBody = requestBody; }
+    
+    public Map<String, String> getQueryParams() { return queryParams; }
+    public void setQueryParams(Map<String, String> queryParams) { this.queryParams = queryParams; }
+    
+    public String getExpectedResponseBody() { return expectedResponseBody; }
+    public void setExpectedResponseBody(String expectedResponseBody) { this.expectedResponseBody = expectedResponseBody; }
+    
+    public boolean isAlive() { return isAlive; }
+    public void setAlive(boolean alive) { this.isAlive = alive; }
+    
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
     
@@ -171,6 +201,10 @@ public class MonitoredService {
     public String expectedResponseCode() { return expectedResponseCode; }
     public String expectedContent() { return expectedContent; }
     public boolean sslCertificateCheck() { return sslCertificateCheck; }
+    public String serviceType() { return serviceType; }
+    public String requestBody() { return requestBody; }
+    public Map<String, String> queryParams() { return queryParams; }
+    public String expectedResponseBody() { return expectedResponseBody; }
     public Long userId() { return userId; }
     public LocalDateTime createdAt() { return createdAt; }
     public LocalDateTime updatedAt() { return updatedAt; }

@@ -9,13 +9,19 @@ import java.util.Map;
 public record MonitoredServiceResponse(
         Long id,
         String name,
+        String description,
         String url,
-        String type,
+        String serviceType,
         Boolean enabled,
         Integer checkIntervalMinutes,
         Integer timeoutSeconds,
-        Integer expectedStatusCode,
+        String httpMethod,
         Map<String, String> headers,
+        String requestBody,
+        Map<String, String> queryParams,
+        Integer expectedStatusCode,
+        String expectedResponseBody,
+        Boolean isAlive,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {}

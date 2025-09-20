@@ -1,7 +1,5 @@
 package taxisty.pingtower.backend.scheduler.task;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -27,13 +25,11 @@ public class ApiMonitoringTask implements ScheduledTask {
     private static final int DEFAULT_TIMEOUT_SECONDS = 30;
     
     private final HttpClient httpClient;
-    private final ObjectMapper objectMapper;
     
     public ApiMonitoringTask() {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(DEFAULT_TIMEOUT_SECONDS))
                 .build();
-        this.objectMapper = new ObjectMapper();
     }
     
     @Override
@@ -44,11 +40,11 @@ public class ApiMonitoringTask implements ScheduledTask {
         try {
             // Build HTTP request
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-                    .uri(URI.create(service.url()))
+                    .uri(buildUri(service))
                     .timeout(Duration.ofSeconds(DEFAULT_TIMEOUT_SECONDS));
             
-            // Set HTTP method
-            setHttpMethod(requestBuilder, service.httpMethod());
+            // Set HTTP method with body if needed
+            setHttpMethod(requestBuilder, service.httpMethod(), service.requestBody());
             
             // Add custom headers
             addCustomHeaders(requestBuilder, service.headers());
@@ -100,35 +96,36 @@ public class ApiMonitoringTask implements ScheduledTask {
     
     @Override
     public String getTaskType() {
-        return TaskType.API_CHECK.getCode();
+        return TaskType.API.getCode();
     }
     
     @Override
     public boolean canExecute(MonitoredService service) {
         String url = service.url();
-        if (url == null) {
-            return false;
-        }
-        
-        // Check if URL suggests an API endpoint
-        return url.contains("/api/") || 
-               url.contains("/health") || 
-               url.contains("/status") || 
-               url.contains("/v1/") || 
-               url.contains("/v2/") ||
-               url.endsWith(".json") ||
-               url.endsWith(".xml");
+        return url != null && (url.startsWith("http://") || url.startsWith("https://"));
     }
     
-    private void setHttpMethod(HttpRequest.Builder builder, String method) {
+    private void setHttpMethod(HttpRequest.Builder builder, String method, String requestBody) {
         if (method == null || method.isBlank()) {
             method = "GET";
         }
         
         switch (method.toUpperCase()) {
             case "GET" -> builder.GET();
-            case "POST" -> builder.POST(HttpRequest.BodyPublishers.noBody());
-            case "PUT" -> builder.PUT(HttpRequest.BodyPublishers.noBody());
+            case "POST" -> {
+                if (requestBody != null && !requestBody.isBlank()) {
+                    builder.POST(HttpRequest.BodyPublishers.ofString(requestBody));
+                } else {
+                    builder.POST(HttpRequest.BodyPublishers.noBody());
+                }
+            }
+            case "PUT" -> {
+                if (requestBody != null && !requestBody.isBlank()) {
+                    builder.PUT(HttpRequest.BodyPublishers.ofString(requestBody));
+                } else {
+                    builder.PUT(HttpRequest.BodyPublishers.noBody());
+                }
+            }
             case "DELETE" -> builder.DELETE();
             case "HEAD" -> builder.method("HEAD", HttpRequest.BodyPublishers.noBody());
             default -> builder.GET();
@@ -143,91 +140,61 @@ public class ApiMonitoringTask implements ScheduledTask {
         // Add default headers for API calls
         builder.header("User-Agent", "PingTower-Monitor/1.0");
         builder.header("Accept", "application/json, application/xml, text/plain, */*");
+        builder.header("Content-Type", "application/json");
+    }
+    
+    private URI buildUri(MonitoredService service) {
+        try {
+            String url = service.url();
+            Map<String, String> queryParams = service.queryParams();
+            
+            if (queryParams == null || queryParams.isEmpty()) {
+                return URI.create(url);
+            }
+            
+            // Build query string
+            StringBuilder queryString = new StringBuilder();
+            for (Map.Entry<String, String> entry : queryParams.entrySet()) {
+                if (queryString.length() > 0) {
+                    queryString.append("&");
+                }
+                queryString.append(java.net.URLEncoder.encode(entry.getKey(), "UTF-8"))
+                          .append("=")
+                          .append(java.net.URLEncoder.encode(entry.getValue(), "UTF-8"));
+            }
+            
+            // Append query to URL
+            String separator = url.contains("?") ? "&" : "?";
+            return URI.create(url + separator + queryString.toString());
+            
+        } catch (Exception e) {
+            logger.warn("Failed to build URI with query params for service {}: {}", service.name(), e.getMessage());
+            return URI.create(service.url());
+        }
     }
     
     private boolean validateApiResponse(HttpResponse<String> response, MonitoredService service) {
-        // Check response code
-        if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            return false;
+        // Check expected status code
+        if (service.getExpectedStatusCode() != null) {
+            if (response.statusCode() != service.getExpectedStatusCode()) {
+                return false;
+            }
+        } else {
+            // Default: accept any 2xx status code
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                return false;
+            }
         }
         
-        String responseBody = response.body();
-        if (responseBody == null || responseBody.trim().isEmpty()) {
-            return false;
-        }
-        
-        // Try to parse as JSON first
-        if (isJsonResponse(response)) {
-            return validateJsonResponse(responseBody, service);
-        }
-        
-        // Fall back to basic content validation
-        if (service.expectedContent() != null && !service.expectedContent().isBlank()) {
-            return responseBody.contains(service.expectedContent());
+        // Check expected response body
+        if (service.getExpectedResponseBody() != null && !service.getExpectedResponseBody().isBlank()) {
+            String responseBody = response.body();
+            if (responseBody == null || !responseBody.trim().equals(service.getExpectedResponseBody().trim())) {
+                return false;
+            }
         }
         
         return true;
-    }
-    
-    private boolean isJsonResponse(HttpResponse<String> response) {
-        String contentType = response.headers()
-                .firstValue("content-type")
-                .orElse("");
-        
-        return contentType.toLowerCase().contains("application/json") ||
-               contentType.toLowerCase().contains("text/json");
-    }
-    
-    private boolean validateJsonResponse(String responseBody, MonitoredService service) {
-        try {
-            JsonNode jsonNode = objectMapper.readTree(responseBody);
-            
-            // Basic validation - ensure it's valid JSON
-            if (jsonNode == null) {
-                return false;
-            }
-            
-            // Check for expected content in JSON structure
-            if (service.expectedContent() != null && !service.expectedContent().isBlank()) {
-                return containsExpectedContent(jsonNode, service.expectedContent());
-            }
-            
-            // For health check endpoints, look for common success indicators
-            if (service.url().contains("/health") || service.url().contains("/status")) {
-                return validateHealthCheckResponse(jsonNode);
-            }
-            
-            return true;
-            
-        } catch (Exception e) {
-            logger.debug("Failed to parse JSON response for service {}: {}", service.name(), e.getMessage());
-            return false;
-        }
-    }
-    
-    private boolean containsExpectedContent(JsonNode jsonNode, String expectedContent) {
-        String jsonString = jsonNode.toString();
-        return jsonString.contains(expectedContent);
-    }
-    
-    private boolean validateHealthCheckResponse(JsonNode jsonNode) {
-        // Common patterns for health check responses
-        if (jsonNode.has("status")) {
-            String status = jsonNode.get("status").asText().toLowerCase();
-            return "ok".equals(status) || "healthy".equals(status) || "up".equals(status);
-        }
-        
-        if (jsonNode.has("health")) {
-            String health = jsonNode.get("health").asText().toLowerCase();
-            return "ok".equals(health) || "healthy".equals(health);
-        }
-        
-        if (jsonNode.has("state")) {
-            String state = jsonNode.get("state").asText().toLowerCase();
-            return "running".equals(state) || "active".equals(state);
-        }
-        
-        return true; // If no specific health indicators, assume valid JSON is success
     }
     
     private String truncateResponseBody(String responseBody) {

@@ -15,12 +15,15 @@ public record MonitoredServiceRequest(
         @NotBlank(message = "Service name is required")
         String name,
         
+        String description,
+        
         @NotBlank(message = "URL is required")
         @Pattern(regexp = "^https?://.*", message = "URL must start with http:// or https://")
         String url,
         
         @NotNull(message = "Service type is required")
-        String type,
+        @Pattern(regexp = "^(PING|API)$", message = "Service type must be PING or API")
+        String serviceType,
         
         @NotNull(message = "Enabled status is required")
         Boolean enabled,
@@ -33,11 +36,17 @@ public record MonitoredServiceRequest(
         @Max(value = 300, message = "Timeout cannot exceed 300 seconds")
         Integer timeoutSeconds,
         
-        @Min(value = 100, message = "Expected status code must be a valid HTTP status code")
-        @Max(value = 599, message = "Expected status code must be a valid HTTP status code")
+        String httpMethod,
+        
+        Map<String, String> headers,
+        
+        String requestBody,
+        
+        Map<String, String> queryParams,
+        
         Integer expectedStatusCode,
         
-        Map<String, String> headers
+        String expectedResponseBody
 ) {
     public MonitoredServiceRequest {
         // Set defaults if null
@@ -49,6 +58,9 @@ public record MonitoredServiceRequest(
         }
         if (timeoutSeconds == null) {
             timeoutSeconds = 30;
+        }
+        if (httpMethod == null) {
+            httpMethod = "GET";
         }
         if (expectedStatusCode == null) {
             expectedStatusCode = 200;

@@ -114,7 +114,19 @@ public class MonitoringExecutorService {
      * @return Task type string
      */
     private String determineTaskType(MonitoredService service) {
-        // Simple logic to determine task type based on service configuration
+        String serviceType = service.getServiceType();
+        if (serviceType != null) {
+            switch (serviceType.toUpperCase()) {
+                case "PING" -> {
+                    return TaskType.PING.getCode();
+                }
+                case "API" -> {
+                    return TaskType.API.getCode();
+                }
+            }
+        }
+        
+        // Fallback to old logic if serviceType is not set
         String url = service.url().toLowerCase();
         
         if (url.contains("/api/") || url.contains("/health") || url.contains("/status")) {

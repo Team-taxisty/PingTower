@@ -78,4 +78,40 @@ public interface MonitoredServiceRepository extends JpaRepository<MonitoredServi
             @Param("enabled") Boolean enabled, 
             @Param("name") String name, 
             org.springframework.data.domain.Pageable pageable);
+    
+    /**
+     * Find services by user ID with pagination
+     */
+    @Query("SELECT ms FROM MonitoredService ms WHERE ms.userId = :userId AND ms.isActive = true")
+    org.springframework.data.domain.Page<MonitoredService> findByUserId(
+            @Param("userId") Long userId, 
+            org.springframework.data.domain.Pageable pageable);
+    
+    /**
+     * Find services by user ID and enabled status with pagination
+     */
+    @Query("SELECT ms FROM MonitoredService ms WHERE ms.userId = :userId AND ms.isActive = :enabled")
+    org.springframework.data.domain.Page<MonitoredService> findByUserIdAndEnabled(
+            @Param("userId") Long userId,
+            @Param("enabled") Boolean enabled, 
+            org.springframework.data.domain.Pageable pageable);
+    
+    /**
+     * Find services by user ID and name pattern with pagination
+     */
+    @Query("SELECT ms FROM MonitoredService ms WHERE ms.userId = :userId AND ms.isActive = true AND LOWER(ms.name) LIKE LOWER(CONCAT('%', :name, '%'))")
+    org.springframework.data.domain.Page<MonitoredService> findByUserIdAndNameContainingIgnoreCase(
+            @Param("userId") Long userId,
+            @Param("name") String name, 
+            org.springframework.data.domain.Pageable pageable);
+    
+    /**
+     * Find services by user ID, enabled status and name pattern with pagination
+     */
+    @Query("SELECT ms FROM MonitoredService ms WHERE ms.userId = :userId AND ms.isActive = :enabled AND LOWER(ms.name) LIKE LOWER(CONCAT('%', :name, '%'))")
+    org.springframework.data.domain.Page<MonitoredService> findByUserIdAndEnabledAndNameContainingIgnoreCase(
+            @Param("userId") Long userId,
+            @Param("enabled") Boolean enabled, 
+            @Param("name") String name, 
+            org.springframework.data.domain.Pageable pageable);
 }
