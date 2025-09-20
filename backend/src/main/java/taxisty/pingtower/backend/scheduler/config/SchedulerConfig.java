@@ -1,18 +1,15 @@
 package taxisty.pingtower.backend.scheduler.config;
 
-import org.quartz.JobDetail;
+import java.util.Properties;
+
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
-import org.quartz.impl.StdSchedulerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.scheduling.quartz.SpringBeanJobFactory;
-
-import javax.sql.DataSource;
-import java.util.Properties;
 
 /**
  * Configuration for the Quartz scheduler used by PingTower monitoring.
@@ -35,13 +32,11 @@ public class SchedulerConfig {
      * Main scheduler factory bean configuration.
      */
     @Bean
-    public SchedulerFactoryBean schedulerFactoryBean(DataSource dataSource, 
-                                                   SpringBeanJobFactory jobFactory,
+    public SchedulerFactoryBean schedulerFactoryBean(SpringBeanJobFactory jobFactory,
                                                    SchedulerProperties schedulerProperties) {
         
         SchedulerFactoryBean factory = new SchedulerFactoryBean();
         factory.setJobFactory(jobFactory);
-        factory.setDataSource(dataSource);
         factory.setQuartzProperties(createQuartzProperties(schedulerProperties));
         factory.setWaitForJobsToCompleteOnShutdown(true);
         factory.setAutoStartup(true);
@@ -79,13 +74,8 @@ public class SchedulerConfig {
         properties.put("org.quartz.threadPool.threadCount", String.valueOf(props.getThreadCount()));
         properties.put("org.quartz.threadPool.threadPriority", "5");
         
-        // Job store configuration (using database)
-        properties.put("org.quartz.jobStore.class", "org.quartz.impl.jdbcjobstore.JobStoreTX");
-        properties.put("org.quartz.jobStore.driverDelegateClass", "org.quartz.impl.jdbcjobstore.PostgreSQLDelegate");
-        properties.put("org.quartz.jobStore.tablePrefix", "QRTZ_");
-        properties.put("org.quartz.jobStore.isClustered", String.valueOf(props.isClustered()));
-        properties.put("org.quartz.jobStore.clusterCheckinInterval", String.valueOf(props.getClusterCheckinInterval()));
-        properties.put("org.quartz.jobStore.useProperties", "false");
+        // Job store configuration (using RAM for development)
+        properties.put("org.quartz.jobStore.class", "org.quartz.simpl.RAMJobStore");
         
         // Misfire handling
         properties.put("org.quartz.jobStore.misfireThreshold", String.valueOf(props.getMisfireThreshold()));
