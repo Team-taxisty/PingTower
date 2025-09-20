@@ -1,23 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Import useEffect for initial state synchronization
 
-function EditServiceModal({ service, open, onClose, onSubmit }) {
+function EditCheckModal({ check, open, onClose, onSubmit }) { // Renamed from EditServiceModal and service prop
   const [formData, setFormData] = useState({
-    name: service?.name || '',
-    url: service?.url || '',
-    checkInterval: '60s',
-    checkType: 'http',
-    timeout: '30s'
+    name: check?.name || '',
+    type: check?.type || 'HTTP', // Default to HTTP
+    target: check?.target || '',
+    interval_sec: check?.interval_sec || 60, // Default to 60 seconds
   });
+
+  useEffect(() => {
+    if (check) {
+      setFormData({
+        name: check.name || '',
+        type: check.type || 'HTTP',
+        target: check.target || '',
+        interval_sec: check.interval_sec || 60,
+      });
+    }
+  }, [check]);
 
   // Добавляем новые состояния для отслеживания наведения кнопок
   const [isCancelButtonHovered, setIsCancelButtonHovered] = useState(false);
   const [isSaveButtonHovered, setIsSaveButtonHovered] = useState(false);
 
-  if (!open || !service) return null;
+  if (!open || !check) return null;
 
   function handleSubmit(event) {
     event.preventDefault();
-    onSubmit({ ...service, ...formData });
+    onSubmit({ ...check, ...formData });
     onClose();
   }
 
@@ -62,7 +72,7 @@ function EditServiceModal({ service, open, onClose, onSubmit }) {
   return (
     <div style={overlay} onClick={onClose}>
       <div style={modal} onClick={(e) => e.stopPropagation()}>
-        <div style={{ fontWeight: 600, fontSize: 16, color: '#6D0475' }}>Редактировать мониторинг</div>
+        <div style={{ fontWeight: 600, fontSize: 16, color: '#6D0475' }}>Редактировать проверку</div>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div>
             <label style={label} htmlFor="name">Название</label>
@@ -77,55 +87,45 @@ function EditServiceModal({ service, open, onClose, onSubmit }) {
             />
           </div>
           <div>
-            <label style={label} htmlFor="url">URL</label>
+            <label style={label} htmlFor="type">Тип проверки</label>
+            <select 
+              style={select} 
+              id="type" 
+              name="type" 
+              value={formData.type}
+              onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+            >
+              <option value="HTTP">HTTP</option>
+              <option value="HTTPS">HTTPS</option>
+              <option value="API_JSON">API_JSON</option>
+              <option value="API_XML">API_XML</option>
+            </select>
+          </div>
+          <div>
+            <label style={label} htmlFor="target">Цель (URL)</label>
             <input 
               style={input} 
-              id="url" 
-              name="url" 
-              type="url" 
-              value={formData.url}
-              onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
+              id="target" 
+              name="target" 
+              type="text" 
+              value={formData.target}
+              onChange={(e) => setFormData(prev => ({ ...prev, target: e.target.value }))}
             />
           </div>
           <div>
-            <label style={label} htmlFor="checkInterval">Интервал проверки</label>
+            <label style={label} htmlFor="interval_sec">Интервал проверки</label>
             <select 
               style={select} 
-              id="checkInterval" 
-              value={formData.checkInterval}
-              onChange={(e) => setFormData(prev => ({ ...prev, checkInterval: e.target.value }))}
+              id="interval_sec" 
+              name="interval_sec" 
+              value={formData.interval_sec}
+              onChange={(e) => setFormData(prev => ({ ...prev, interval_sec: parseInt(e.target.value) }))}
             >
-              <option value="30s">30 секунд</option>
-              <option value="60s">1 минута</option>
-              <option value="300s">5 минут</option>
-              <option value="600s">10 минут</option>
-            </select>
-          </div>
-          <div>
-            <label style={label} htmlFor="checkType">Тип проверки</label>
-            <select 
-              style={select} 
-              id="checkType" 
-              value={formData.checkType}
-              onChange={(e) => setFormData(prev => ({ ...prev, checkType: e.target.value }))}
-            >
-              <option value="http">HTTP</option>
-              <option value="https">HTTPS</option>
-              <option value="ping">Ping</option>
-              <option value="tcp">TCP</option>
-            </select>
-          </div>
-          <div>
-            <label style={label} htmlFor="timeout">Таймаут</label>
-            <select 
-              style={select} 
-              id="timeout" 
-              value={formData.timeout}
-              onChange={(e) => setFormData(prev => ({ ...prev, timeout: e.target.value }))}
-            >
-              <option value="10s">10 секунд</option>
-              <option value="30s">30 секунд</option>
-              <option value="60s">1 минута</option>
+              <option value={15}>15 секунд</option>
+              <option value={30}>30 секунд</option>
+              <option value={60}>1 минута</option>
+              <option value={300}>5 минут</option>
+              <option value={600}>10 минут</option>
             </select>
           </div>
           <div style={actions}>
@@ -155,4 +155,4 @@ function EditServiceModal({ service, open, onClose, onSubmit }) {
   );
 }
 
-export default EditServiceModal;
+export default EditCheckModal;
