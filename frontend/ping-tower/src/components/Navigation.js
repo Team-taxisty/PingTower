@@ -16,7 +16,8 @@ function Navigation({ currentPage, onNavigate }) {
     display: 'flex',
     alignItems: 'center',
     gap: 12,
-    marginRight: 'auto'
+    marginRight: 'auto',
+    cursor: 'pointer' // Добавляем курсор-указатель для обозначения кликабельности
   };
 
   const logoPlaceholderStyle = {
@@ -41,25 +42,25 @@ function Navigation({ currentPage, onNavigate }) {
     textDecoration: 'none',
     fontSize: 14,
     fontWeight: isActive ? 600 : 500,
-    transition: 'all 0.2s ease'
+    transition: 'all 0.2s ease',
+    fontFamily: 'Inter'
   });
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'dashboard', label: 'Дашборд' },
     { id: 'alerts', label: 'Уведомления' },
     { id: 'reports', label: 'Отчёты' },
-    { id: 'settings', label: 'Настройки' },
-    { id: 'auth', label: 'Авторизация' }
+    { id: 'settings', label: 'Настройки' }
   ];
 
   return (
     <nav style={navStyle}>
-      <div style={logoStyle}>
+      <div style={logoStyle} onClick={() => onNavigate('dashboard')}> {/* Добавляем обработчик onClick здесь */}
         <div style={logoPlaceholderStyle}>
           <img
             src="/images/logoHeader.png"
             alt="PingTower logo"
-            style={{width: 400, height: 48, borderRadius: 10, paddingLeft: 80}}
+            style={{width: 400, height: 60, borderRadius: 10, paddingLeft: 105}}
           />
         </div>
       </div>
