@@ -12,7 +12,7 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "app_user", indexes = {
-        @Index(name = "idx_user_username", columnList = "username", unique = true),
+        @Index(name = "idx_user_username", columnList = "username"),
         @Index(name = "idx_user_email", columnList = "email", unique = true)
 })
 public class User {
@@ -21,7 +21,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "username", nullable = false, unique = true, length = 100)
+    @Column(name = "username", nullable = false, length = 100)
     private String username;
     
     @Column(name = "email", nullable = false, unique = true, length = 255)
