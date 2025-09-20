@@ -15,15 +15,13 @@ COPY src/ src/
 RUN gradle build -x test --no-daemon
 
 # Production stage
-FROM openjdk:21-jre-slim
+FROM eclipse-temurin:21-jre-alpine
 
 # Установка необходимых пакетов
-RUN apt-get update && apt-get install -y \
-    wget \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache wget
 
 # Создание пользователя для безопасности
-RUN groupadd -r pingtower && useradd -r -g pingtower pingtower
+RUN addgroup -g 1000 pingtower && adduser -D -s /bin/sh -u 1000 -G pingtower pingtower
 
 # Установка рабочей директории
 WORKDIR /app
