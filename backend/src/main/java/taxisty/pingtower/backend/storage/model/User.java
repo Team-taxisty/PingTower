@@ -30,12 +30,6 @@ public class User {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
     
-    @Column(name = "first_name", length = 100)
-    private String firstName;
-    
-    @Column(name = "last_name", length = 100)
-    private String lastName;
-    
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role")
@@ -55,16 +49,13 @@ public class User {
     
     public User() {}
     
-    public User(Long id, String username, String email, String passwordHash,
-               String firstName, String lastName, Set<String> roles, 
+    public User(Long id, String username, String email, String passwordHash, Set<String> roles, 
                boolean isActive, LocalDateTime lastLoginAt, 
                LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
-        this.firstName = firstName;
-        this.lastName = lastName;
         this.roles = roles != null ? roles : new HashSet<>();
         this.isActive = isActive;
         this.lastLoginAt = lastLoginAt;
@@ -98,13 +89,7 @@ public class User {
     
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
-    
-    public String getFirstName() { return firstName; }
-    public void setFirstName(String firstName) { this.firstName = firstName; }
-    
-    public String getLastName() { return lastName; }
-    public void setLastName(String lastName) { this.lastName = lastName; }
-    
+
     public Set<String> getRoles() { return roles; }
     public void setRoles(Set<String> roles) { this.roles = roles; }
     
@@ -125,8 +110,6 @@ public class User {
     public String username() { return username; }
     public String email() { return email; }
     public String passwordHash() { return passwordHash; }
-    public String firstName() { return firstName; }
-    public String lastName() { return lastName; }
     public Set<String> roles() { return roles; }
     public LocalDateTime lastLoginAt() { return lastLoginAt; }
     public LocalDateTime createdAt() { return createdAt; }

@@ -2,10 +2,14 @@ package taxisty.pingtower.backend.api.controller;
 
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,10 +20,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-
 import jakarta.validation.Valid;
 import taxisty.pingtower.backend.api.dto.MonitoredServiceRequest;
 import taxisty.pingtower.backend.api.dto.MonitoredServiceResponse;
+import taxisty.pingtower.backend.api.service.UserService;
 import taxisty.pingtower.backend.monitoring.repository.MonitoredServiceRepository;
 import taxisty.pingtower.backend.monitoring.service.MonitoringService;
 import taxisty.pingtower.backend.scheduler.service.SchedulerService;
@@ -35,20 +39,46 @@ import taxisty.pingtower.backend.storage.model.MonitoredService;
  * - Testing service connectivity
  */
 @RestController
-@RequestMapping("/api/v1/services")
+@RequestMapping("/api/services")
 public class MonitoredServiceController {
+
+    private static final Logger logger = LoggerFactory.getLogger(MonitoredServiceController.class);
 
     private final MonitoredServiceRepository serviceRepository;
     private final SchedulerService schedulerService;
     private final MonitoringService monitoringService;
+    private final UserService userService;
 
     public MonitoredServiceController(
             MonitoredServiceRepository serviceRepository,
             SchedulerService schedulerService,
-            MonitoringService monitoringService) {
+            MonitoringService monitoringService,
+            UserService userService) {
         this.serviceRepository = serviceRepository;
         this.schedulerService = schedulerService;
         this.monitoringService = monitoringService;
+        this.userService = userService;
+    }
+
+    /**
+     * Get current authenticated user ID from JWT token
+     */
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        logger.debug("Authentication object: {}", authentication);
+        if (authentication == null) {
+            logger.error("No authentication found in security context");
+            throw new RuntimeException("No authentication found in security context");
+        }
+        String username = authentication.getName();
+        logger.debug("Username from authentication: {}", username);
+        if (username == null) {
+            logger.error("No username found in authentication");
+            throw new RuntimeException("No username found in authentication");
+        }
+        Long userId = userService.getUserByUsername(username).getId();
+        logger.debug("User ID: {}", userId);
+        return userId;
     }
 
     /**
@@ -60,16 +90,18 @@ public class MonitoredServiceController {
             @RequestParam(required = false) Boolean enabled,
             @RequestParam(required = false) String search) {
         
+        Long userId = getCurrentUserId();
+        
         Page<MonitoredService> services;
         
         if (enabled != null && search != null) {
-            services = serviceRepository.findByEnabledAndNameContainingIgnoreCase(enabled, search, pageable);
+            services = serviceRepository.findByUserIdAndEnabledAndNameContainingIgnoreCase(userId, enabled, search, pageable);
         } else if (enabled != null) {
-            services = serviceRepository.findByEnabled(enabled, pageable);
+            services = serviceRepository.findByUserIdAndEnabled(userId, enabled, pageable);
         } else if (search != null) {
-            services = serviceRepository.findByNameContainingIgnoreCase(search, pageable);
+            services = serviceRepository.findByUserIdAndNameContainingIgnoreCase(userId, search, pageable);
         } else {
-            services = serviceRepository.findAll(pageable);
+            services = serviceRepository.findByUserId(userId, pageable);
         }
 
         Page<MonitoredServiceResponse> response = services.map(this::convertToResponse);
@@ -81,9 +113,10 @@ public class MonitoredServiceController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<MonitoredServiceResponse> getServiceById(@PathVariable Long id) {
+        Long userId = getCurrentUserId();
         Optional<MonitoredService> service = serviceRepository.findById(id);
         
-        if (service.isEmpty()) {
+        if (service.isEmpty() || !service.get().getUserId().equals(userId)) {
             return ResponseEntity.notFound().build();
         }
 
@@ -122,9 +155,10 @@ public class MonitoredServiceController {
             @PathVariable Long id,
             @Valid @RequestBody MonitoredServiceRequest request) {
         
+        Long userId = getCurrentUserId();
         Optional<MonitoredService> existingService = serviceRepository.findById(id);
         
-        if (existingService.isEmpty()) {
+        if (existingService.isEmpty() || !existingService.get().getUserId().equals(userId)) {
             return ResponseEntity.notFound().build();
         }
 
@@ -155,9 +189,10 @@ public class MonitoredServiceController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteService(@PathVariable Long id) {
+        Long userId = getCurrentUserId();
         Optional<MonitoredService> service = serviceRepository.findById(id);
         
-        if (service.isEmpty()) {
+        if (service.isEmpty() || !service.get().getUserId().equals(userId)) {
             return ResponseEntity.notFound().build();
         }
 
@@ -180,9 +215,10 @@ public class MonitoredServiceController {
             @PathVariable Long id,
             @RequestParam boolean enabled) {
         
+        Long userId = getCurrentUserId();
         Optional<MonitoredService> serviceOpt = serviceRepository.findById(id);
         
-        if (serviceOpt.isEmpty()) {
+        if (serviceOpt.isEmpty() || !serviceOpt.get().getUserId().equals(userId)) {
             return ResponseEntity.notFound().build();
         }
 
@@ -209,9 +245,10 @@ public class MonitoredServiceController {
      */
     @PostMapping("/{id}/test")
     public ResponseEntity<String> testService(@PathVariable Long id) {
+        Long userId = getCurrentUserId();
         Optional<MonitoredService> serviceOpt = serviceRepository.findById(id);
         
-        if (serviceOpt.isEmpty()) {
+        if (serviceOpt.isEmpty() || !serviceOpt.get().getUserId().equals(userId)) {
             return ResponseEntity.notFound().build();
         }
 
@@ -301,13 +338,19 @@ public class MonitoredServiceController {
         return new MonitoredServiceResponse(
                 service.getId(),
                 service.getName(),
+                service.getDescription(),
                 service.getUrl(),
-                service.getType(),
+                service.getServiceType(),
                 service.getEnabled(),
                 service.getCheckIntervalMinutes(),
                 service.getTimeoutSeconds(),
-                service.getExpectedStatusCode(),
+                service.getHttpMethod(),
                 service.getHeaders(),
+                service.getRequestBody(),
+                service.getQueryParams(),
+                service.getExpectedStatusCode(),
+                service.getExpectedResponseBody(),
+                service.isAlive(),
                 service.getCreatedAt(),
                 service.getUpdatedAt()
         );
@@ -321,12 +364,18 @@ public class MonitoredServiceController {
 
     private void updateEntityFromRequest(MonitoredService service, MonitoredServiceRequest request) {
         service.setName(request.name());
+        service.setDescription(request.description());
         service.setUrl(request.url());
-        service.setType(request.type());
+        service.setServiceType(request.serviceType());
         service.setEnabled(request.enabled());
         service.setCheckIntervalMinutes(request.checkIntervalMinutes());
         service.setTimeoutSeconds(request.timeoutSeconds());
-        service.setExpectedStatusCode(request.expectedStatusCode());
+        service.setHttpMethod(request.httpMethod());
         service.setHeaders(request.headers());
+        service.setRequestBody(request.requestBody());
+        service.setQueryParams(request.queryParams());
+        service.setExpectedStatusCode(request.expectedStatusCode());
+        service.setExpectedResponseBody(request.expectedResponseBody());
+        service.setUserId(getCurrentUserId()); // Get from JWT
     }
 }

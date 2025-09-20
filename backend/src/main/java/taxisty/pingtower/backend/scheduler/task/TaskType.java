@@ -5,6 +5,8 @@ package taxisty.pingtower.backend.scheduler.task;
  */
 public enum TaskType {
     
+    PING("PING", "Simple ping check for URL availability"),
+    API("API", "API endpoint validation with response body and status code checking"),
     HTTP_CHECK("HTTP_CHECK", "Standard HTTP/HTTPS availability check"),
     API_CHECK("API_CHECK", "API endpoint validation with response parsing"),
     SSL_CHECK("SSL_CHECK", "SSL certificate validation check"),

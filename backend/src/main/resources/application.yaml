@@ -54,3 +54,8 @@ pingtower:
 jwt:
   secret: pingtower-secret-key-for-jwt-tokens-in-hackathon
   expiration: 86400000
+
+logging:
+  level:
+    taxisty.pingtower.backend.api.controller.MonitoredServiceController: DEBUG
+    org.springframework.security: DEBUG
