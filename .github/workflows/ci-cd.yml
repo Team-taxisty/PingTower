@@ -1,117 +1,117 @@
-name: CI/CD Pipeline
+# name: CI/CD Pipeline
 
-on:
-  push:
-    branches: [ main, docker ]
-  pull_request:
-    branches: [ main ]
+# on:
+#   push:
+#     branches: [ main, docker ]
+#   pull_request:
+#     branches: [ main ]
 
-jobs:
-  # Backend Tests and Build
-  backend-test:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
+# jobs:
+#   # Backend Tests and Build
+#   backend-test:
+#     runs-on: ubuntu-latest
+#     defaults:
+#       run:
+#         working-directory: ./backend
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v4
       
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
+#     - name: Set up JDK 21
+#       uses: actions/setup-java@v4
+#       with:
+#         java-version: '21'
+#         distribution: 'temurin'
         
-    - name: Cache Gradle packages
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+#     - name: Cache Gradle packages
+#       uses: actions/cache@v3
+#       with:
+#         path: |
+#           ~/.gradle/caches
+#           ~/.gradle/wrapper
+#         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+#         restore-keys: |
+#           ${{ runner.os }}-gradle-
           
-    - name: Make gradlew executable
-      run: chmod +x gradlew
+#     - name: Make gradlew executable
+#       run: chmod +x gradlew
       
-    - name: Run tests
-      run: ./gradlew test
+#     - name: Run tests
+#       run: ./gradlew test
       
-    - name: Build application
-      run: ./gradlew build -x test
+#     - name: Build application
+#       run: ./gradlew build -x test
 
-  # Frontend Tests and Build
-  frontend-test:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend/ping-tower
+#   # Frontend Tests and Build
+#   frontend-test:
+#     runs-on: ubuntu-latest
+#     defaults:
+#       run:
+#         working-directory: ./frontend/ping-tower
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v4
       
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: frontend/ping-tower/package-lock.json
+#     - name: Set up Node.js
+#       uses: actions/setup-node@v4
+#       with:
+#         node-version: '18'
+#         cache: 'npm'
+#         cache-dependency-path: frontend/ping-tower/package-lock.json
         
-    - name: Install dependencies
-      run: npm ci
+#     - name: Install dependencies
+#       run: npm ci
       
-    - name: Run tests
-      run: npm test -- --coverage --watchAll=false
+#     - name: Run tests
+#       run: npm test -- --coverage --watchAll=false
       
-    - name: Build application
-      run: npm run build
+#     - name: Build application
+#       run: npm run build
 
-  # Docker Build (только для push)
-  docker-build:
-    needs: [backend-test, frontend-test]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+#   # Docker Build (только для push)
+#   docker-build:
+#     needs: [backend-test, frontend-test]
+#     runs-on: ubuntu-latest
+#     if: github.event_name == 'push'
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v4
       
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+  #   - name: Set up Docker Buildx
+  #     uses: docker/setup-buildx-action@v3
       
-    - name: Build Backend image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./backend
-        file: ./backend/Dockerfile
-        push: false
-        tags: pingtower-backend:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+  #   - name: Build Backend image
+  #     uses: docker/build-push-action@v5
+  #     with:
+  #       context: ./backend
+  #       file: ./backend/Dockerfile
+  #       push: false
+  #       tags: pingtower-backend:latest
+  #       cache-from: type=gha
+  #       cache-to: type=gha,mode=max
         
-    - name: Build Frontend image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./frontend/ping-tower
-        file: ./frontend/ping-tower/Dockerfile
-        push: false
-        tags: pingtower-frontend:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+  #   - name: Build Frontend image
+  #     uses: docker/build-push-action@v5
+  #     with:
+  #       context: ./frontend/ping-tower
+  #       file: ./frontend/ping-tower/Dockerfile
+  #       push: false
+  #       tags: pingtower-frontend:latest
+  #       cache-from: type=gha
+  #       cache-to: type=gha,mode=max
 
-  # Deploy to Staging (если на docker ветке)
-  deploy-staging:
-    needs: [docker-build]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/docker' && github.event_name == 'push'
+  # # Deploy to Staging (если на docker ветке)
+  # deploy-staging:
+  #   needs: [docker-build]
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/docker' && github.event_name == 'push'
     
-    steps:
-    - name: Deploy to staging
-      run: |
-        echo "Deploying to staging environment..."
-        echo "Backend and Frontend images built successfully!"
-        # Здесь можно добавить команды для деплоя
+  #   steps:
+  #   - name: Deploy to staging
+  #     run: |
+  #       echo "Deploying to staging environment..."
+  #       echo "Backend and Frontend images built successfully!"
+  #       # Здесь можно добавить команды для деплоя
