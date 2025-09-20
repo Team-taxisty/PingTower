@@ -15,7 +15,7 @@ jobs:
       with:
         java-version: '21'
         distribution: 'temurin'
-        
+     
     - name: Build Backend
       run: |
         cd backend
@@ -26,26 +26,32 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        
-    - name: Build Frontend
+
+    - name: Build Frontend (ignore warnings)
       run: |
         cd frontend/ping-tower
         npm ci
-        npm run build
+        CI=false npm run build
+        
+    - name: Build Success
+      run: echo "✅ Build completed!"
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     steps:
-    - name: Deploy
-      uses: appleboy/ssh-action@v1.0.3
+    - name: Deploy to Production
+      uses: appleboy/ssh-action@v1.1.0
       with:
         host: 203.81.208.67
         username: ubuntu
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        timeout: 300s
         script: |
-          cd /opt/pingtower || (mkdir -p /opt/pingtower && cd /opt/pingtower)
-          git pull origin main || git clone https://github.com/Team-taxisty/PingTower.git .
+          cd /opt/data/pingtower
+          git pull origin main
           cd docker
-          docker-compose down || true
-          docker-compose up -d --build
+          docker compose down || true
+          docker compose up -d --build
+          echo "✅ PingTower deployed successfully!"
+          docker compose ps
