@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: pingtower-postgres-prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-monitoring}
+      POSTGRES_USER: ${POSTGRES_USER:-monitoring}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    networks:
+      - pingtower-prod-network
+    restart: unless-stopped
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: pingtower-clickhouse-prod
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-monitoring}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-monitoring}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+    volumes:
+      - clickhouse_prod_data:/var/lib/clickhouse
+    networks:
+      - pingtower-prod-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: pingtower-backend-prod
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-monitoring}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-monitoring}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      - postgres
+      - clickhouse
+    networks:
+      - pingtower-prod-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../frontend/ping-tower
+      dockerfile: Dockerfile
+    container_name: pingtower-frontend-prod
+    depends_on:
+      - backend
+    networks:
+      - pingtower-prod-network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: pingtower-nginx-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - pingtower-prod-network
+    restart: unless-stopped
+
+volumes:
+  postgres_prod_data:
+  clickhouse_prod_data:
+
+networks:
+  pingtower-prod-network:
+    driver: bridge

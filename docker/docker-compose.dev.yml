@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: pingtower-postgres-dev
+    environment:
+      POSTGRES_DB: monitoring
+      POSTGRES_USER: monitoring
+      POSTGRES_PASSWORD: dev123
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - pingtower-dev-network
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: pingtower-clickhouse-dev
+    environment:
+      CLICKHOUSE_DB: monitoring
+      CLICKHOUSE_USER: monitoring
+      CLICKHOUSE_PASSWORD: dev123
+    volumes:
+      - clickhouse_dev_data:/var/lib/clickhouse
+    ports:
+      - "8123:8123"
+    networks:
+      - pingtower-dev-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: pingtower-mailhog-dev
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - pingtower-dev-network
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: pingtower-backend-dev
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/monitoring
+      SPRING_DATASOURCE_USERNAME: monitoring
+      SPRING_DATASOURCE_PASSWORD: dev123
+      SPRING_MAIL_HOST: mailhog
+      SPRING_MAIL_PORT: 1025
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - clickhouse
+      - mailhog
+    networks:
+      - pingtower-dev-network
+
+volumes:
+  postgres_dev_data:
+  clickhouse_dev_data:
+
+networks:
+  pingtower-dev-network:
+    driver: bridge
