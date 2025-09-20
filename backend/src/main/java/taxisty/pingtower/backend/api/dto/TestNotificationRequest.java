@@ -1,4 +1,4 @@
-package taxisty.pingtower.backend.notifications.api.dto;
+package taxisty.pingtower.backend.api.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
