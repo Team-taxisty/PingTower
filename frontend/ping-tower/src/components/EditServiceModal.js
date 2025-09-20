@@ -9,6 +9,10 @@ function EditServiceModal({ service, open, onClose, onSubmit }) {
     timeout: '30s'
   });
 
+  // Добавляем новые состояния для отслеживания наведения кнопок
+  const [isCancelButtonHovered, setIsCancelButtonHovered] = useState(false);
+  const [isSaveButtonHovered, setIsSaveButtonHovered] = useState(false);
+
   if (!open || !service) return null;
 
   function handleSubmit(event) {
@@ -28,17 +32,32 @@ function EditServiceModal({ service, open, onClose, onSubmit }) {
     boxShadow: '0 4px 12px rgba(109, 4, 117, 0.2)'
   };
   const label = { fontSize: 12, color: '#6D0475', marginBottom: 4, display: 'block', fontWeight: 600 };
+  // Обновляем inputStyle для корректной обработки ширины с padding и border
   const input = {
     width: '100%', borderRadius: '8px', border: '1px solid #E5B8E8', padding: '10px 12px',
-    background: '#ffffff', color: '#1a1a1a', marginBottom: 12, fontSize: '14px'
+    background: '#ffffff', color: '#1a1a1a', marginBottom: 12, fontSize: '14px', boxSizing: 'border-box'
   };
-  const select = { ...input, cursor: 'pointer' };
+  // Создаем selectStyle на основе inputStyle
+  const select = { ...input, cursor: 'pointer', boxSizing: 'border-box' };
   const actions = { display: 'flex', gap: '12px', justifyContent: 'flex-end' };
   const btn = {
     padding: '10px 16px', borderRadius: '8px', border: '1px solid #E5B8E8', cursor: 'pointer',
     background: '#ffffff', color: '#6D0475', fontSize: '14px', fontWeight: 500, transition: 'all 0.2s ease'
   };
   const saveBtn = { ...btn, background: '#6D0475', color: '#ffffff', border: '1px solid #6D0475' };
+
+  // Новые стили для кнопок с эффектом наведения
+  const cancelButtonStyles = {
+    ...btn,
+    background: isCancelButtonHovered ? '#f0f0f0' : '#ffffff', // Светлее на наведении
+    color: isCancelButtonHovered ? '#4a034f' : '#6D0475',     // Темнее текст
+    border: '1px solid #E5B8E8',
+  };
+
+  const saveButtonStyles = {
+    ...saveBtn,
+    background: isSaveButtonHovered ? '#8a0593' : '#6D0475', // Темнее на наведении
+  };
 
   return (
     <div style={overlay} onClick={onClose}>
@@ -110,8 +129,25 @@ function EditServiceModal({ service, open, onClose, onSubmit }) {
             </select>
           </div>
           <div style={actions}>
-            <button type="button" style={btn} onClick={onClose}>Отмена</button>
-            <button type="submit" style={saveBtn}>Сохранить</button>
+            {/* Кнопка "Отмена" */}
+            <button
+              type="button"
+              style={cancelButtonStyles} // Используем новый стиль
+              onClick={onClose}
+              onMouseEnter={() => setIsCancelButtonHovered(true)} // Обрабатываем наведение
+              onMouseLeave={() => setIsCancelButtonHovered(false)} // Обрабатываем уход курсора
+            >
+              Отмена
+            </button>
+            {/* Кнопка "Сохранить" */}
+            <button
+              type="submit"
+              style={saveButtonStyles} // Используем новый стиль
+              onMouseEnter={() => setIsSaveButtonHovered(true)} // Обрабатываем наведение
+              onMouseLeave={() => setIsSaveButtonHovered(false)} // Обрабатываем уход курсора
+            >
+              Сохранить
+            </button>
           </div>
         </form>
       </div>

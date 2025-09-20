@@ -3,8 +3,6 @@ function StatusBadge({ status }) {
     switch (status) {
       case 'ok':
         return { color: '#16a34a', label: 'ОК', bgColor: '#f0fdf4' };
-      case 'degraded':
-        return { color: '#ca8a04', label: 'Деградация', bgColor: '#fffbeb' };
       case 'down':
         return { color: '#dc2626', label: 'Недоступен', bgColor: '#fef2f2' };
       default:

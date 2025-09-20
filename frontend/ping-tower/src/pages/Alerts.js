@@ -11,7 +11,7 @@ function Alerts() {
   const [channels, setChannels] = useState({
     email: { enabled: true, address: 'admin@example.com' },
     telegram: { enabled: true, botToken: '123456789:ABC', chatId: '@alerts' },
-    webhook: { enabled: false, url: 'https://hooks.slack.com/...' }
+    webhook: { enabled: false, url: '' }
   });
 
   const [escalationRules, setEscalationRules] = useState([
@@ -19,12 +19,12 @@ function Alerts() {
     { id: 2, condition: 'high_response_time', duration: '10m', action: 'escalate_email', enabled: true }
   ]);
 
-  const containerStyle = { maxWidth: 1200, margin: '0 auto', padding: 24, color: '#1a1a1a' };
+  const containerStyle = { maxWidth: 1200, margin: '0 auto', padding: 24, color: '#1a1a1a', width: '100%', paddingLeft: 0 };
   const headerStyle = { marginBottom: 24 };
   const titleStyle = { margin: 0, fontSize: 24, fontWeight: 700, color: '#6D0475' };
-  const tabStyle = { padding: '10px 16px', borderRadius: 8, border: '1px solid #E5B8E8', background: '#ffffff', color: '#6D0475', cursor: 'pointer', fontSize: '14px', fontWeight: 500, transition: 'all 0.2s ease' };
-  const activeTabStyle = { ...tabStyle, background: '#6D0475', color: '#ffffff' };
-  const tabsStyle = { display: 'flex', gap: 8, marginBottom: 24 };
+  const tabStyle = { padding: '10px 16px', borderRadius: 8, border: '1px solid #E5B8E8', background: '#ffffff', color: '#6D0475', cursor: 'pointer', fontSize: '14px', fontWeight: 500, fontFamily: 'Inter', transition: 'all 0.2s ease' };
+  const activeTabStyle = { ...tabStyle, background: '#6D0475', color: '#ffffff', fontFamily: 'Inter', fontWeight: 700};
+  const tabsStyle = { display: 'flex', gap: 8, marginBottom: 24, fontFamily: 'Inter', fontWeight: 700 };
   const cardStyle = { background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, marginBottom: 16, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' };
   const tableStyle = { width: '100%', borderCollapse: 'collapse' };
   const thStyle = { padding: '12px', textAlign: 'left', borderBottom: '1px solid #E5B8E8', color: '#6D0475', fontSize: 12, fontWeight: 600 };
@@ -40,19 +40,16 @@ function Alerts() {
 
       <div style={tabsStyle}>
         <button style={activeTab === 'list' ? activeTabStyle : tabStyle} onClick={() => setActiveTab('list')}>
-          Последние алерты
+          Последние уведомления
         </button>
         <button style={activeTab === 'channels' ? activeTabStyle : tabStyle} onClick={() => setActiveTab('channels')}>
           Каналы
-        </button>
-        <button style={activeTab === 'rules' ? activeTabStyle : tabStyle} onClick={() => setActiveTab('rules')}>
-          Правила эскалации
         </button>
       </div>
 
       {activeTab === 'list' && (
         <div style={cardStyle}>
-          <h3 style={{ margin: '0 0 16px 0', color: '#6D0475', fontSize: 18, fontWeight: 600 }}>История алертов</h3>
+          {/* <h3 style={{ margin: '0 0 16px 0', color: '#6D0475', fontSize: 18, fontWeight: 600 }}>История уведомлений</h3> */}
           <table style={tableStyle}>
             <thead>
               <tr>
@@ -60,7 +57,6 @@ function Alerts() {
                 <th style={thStyle}>Сообщение</th>
                 <th style={thStyle}>Время</th>
                 <th style={thStyle}>Статус</th>
-                <th style={thStyle}>Канал</th>
               </tr>
             </thead>
             <tbody>
@@ -80,7 +76,7 @@ function Alerts() {
                       {alert.status === 'active' ? 'Активен' : 'Решён'}
                     </span>
                   </td>
-                  <td style={tdStyle}>{alert.channel}</td>
+                  
                 </tr>
               ))}
             </tbody>
@@ -90,7 +86,7 @@ function Alerts() {
 
       {activeTab === 'channels' && (
         <div style={cardStyle}>
-          <h3 style={{ margin: '0 0 16px 0', color: '#6D0475', fontSize: 18, fontWeight: 600 }}>Настройки каналов</h3>
+          <h3 style={{ margin: '0 0 16px 0', color: '#6D0475', fontSize: 18, fontWeight: 600 }}>Настройка уведомлений</h3>
           
           <div style={{ marginBottom: 24 }}>
             <h4 style={{ margin: '0 0 12px 0', color: '#6D0475', fontSize: 14, fontWeight: 600 }}>Email</h4>
@@ -141,27 +137,6 @@ function Alerts() {
           </div>
 
           <button style={buttonStyle}>Сохранить настройки</button>
-        </div>
-      )}
-
-      {activeTab === 'rules' && (
-        <div style={cardStyle}>
-          <h3 style={{ margin: '0 0 16px 0', color: '#6D0475', fontSize: 18, fontWeight: 600 }}>Правила эскалации</h3>
-          
-          {escalationRules.map(rule => (
-            <div key={rule.id} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0', borderBottom: '1px solid #E5B8E8' }}>
-              <input type="checkbox" checked={rule.enabled} onChange={(e) => setEscalationRules(prev => prev.map(r => r.id === rule.id ? { ...r, enabled: e.target.checked } : r))} />
-              <span style={{ minWidth: 120, color: '#1a1a1a' }}>
-                {rule.condition === 'service_down' ? 'Сервис недоступен' : 'Высокое время отклика'}
-              </span>
-              <span style={{ minWidth: 60, color: '#6D0475' }}>{rule.duration}</span>
-              <span style={{ minWidth: 120, color: '#6D0475' }}>
-                {rule.action === 'duplicate_telegram' ? 'Дублировать в Telegram' : 'Эскалировать по Email'}
-              </span>
-            </div>
-          ))}
-
-          <button style={{ ...buttonStyle, marginTop: 16 }}>Добавить правило</button>
         </div>
       )}
     </div>
