@@ -49,3 +49,8 @@ pingtower:
     retry-delay-seconds: 30
     default-timeout-seconds: 30
     auto-start: true
+
+# JWT Configuration
+jwt:
+  secret: pingtower-secret-key-for-jwt-tokens-in-hackathon
+  expiration: 86400000
