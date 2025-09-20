@@ -9,6 +9,12 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import taxisty.pingtower.backend.scheduler.config.SchedulerProperties;
+import taxisty.pingtower.backend.monitoring.service.MonitoringService;
+import taxisty.pingtower.backend.storage.model.MonitoredService;
+import taxisty.pingtower.backend.storage.model.CheckSchedule;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Service responsible for scheduler lifecycle management and startup initialization.
@@ -21,12 +27,15 @@ public class SchedulerManagementService {
     
     private final SchedulerService schedulerService;
     private final SchedulerProperties schedulerProperties;
+    private final MonitoringService monitoringService;
     
     @Autowired
     public SchedulerManagementService(SchedulerService schedulerService, 
-                                    SchedulerProperties schedulerProperties) {
+                                    SchedulerProperties schedulerProperties,
+                                    MonitoringService monitoringService) {
         this.schedulerService = schedulerService;
         this.schedulerProperties = schedulerProperties;
+        this.monitoringService = monitoringService;
     }
     
     /**
@@ -44,15 +53,8 @@ public class SchedulerManagementService {
                 
                 logger.info("Scheduler auto-start is enabled. Loading existing monitoring schedules...");
                 
-                // TODO: Load and schedule existing monitoring configurations
-                // This would be implemented when the storage layer is available:
-                // List<MonitoredService> services = dataService.getAllActiveServices();
-                // for (MonitoredService service : services) {
-                //     CheckSchedule schedule = dataService.getScheduleForService(service.id());
-                //     if (schedule != null) {
-                //         schedulerService.scheduleMonitoring(service, schedule);
-                //     }
-                // }
+                // Load and schedule existing monitoring configurations
+                loadAndScheduleExistingConfigurations();
                 
                 logger.info("Scheduler initialization completed successfully");
             } else {
@@ -102,8 +104,11 @@ public class SchedulerManagementService {
         logger.info("Reloading all monitoring schedules...");
         
         try {
-            // TODO: Implement schedule reloading
-            // This would unschedule all current jobs and reschedule based on current configuration
+            // Stop all current jobs
+            schedulerService.stopAll();
+            
+            // Reload configurations from storage
+            loadAndScheduleExistingConfigurations();
             
             logger.info("Schedule reload completed successfully");
             
@@ -114,19 +119,73 @@ public class SchedulerManagementService {
     }
     
     /**
+     * Loads existing monitoring configurations and schedules them
+     */
+    private void loadAndScheduleExistingConfigurations() {
+        try {
+            logger.info("Loading active monitoring services...");
+            
+            // Get all active services from storage
+            List<MonitoredService> activeServices = monitoringService.getAllActiveServices();
+            logger.info("Found {} active monitoring services", activeServices.size());
+            
+            for (MonitoredService service : activeServices) {
+                try {
+                    // Create a default schedule if none exists
+                    CheckSchedule schedule = createDefaultScheduleForService(service);
+                    
+                    // Schedule the monitoring job
+                    schedulerService.scheduleMonitoring(service, schedule);
+                    
+                    logger.debug("Scheduled monitoring for service: {} ({})", 
+                                service.getName(), service.getId());
+                    
+                } catch (Exception e) {
+                    logger.error("Failed to schedule monitoring for service: {} ({})", 
+                                service.getName(), service.getId(), e);
+                }
+            }
+            
+            logger.info("Completed loading and scheduling monitoring configurations");
+            
+        } catch (Exception e) {
+            logger.error("Failed to load existing monitoring configurations", e);
+            throw new RuntimeException("Failed to load monitoring configurations", e);
+        }
+    }
+    
+    /**
+     * Creates a default schedule configuration for a service
+     */
+    private CheckSchedule createDefaultScheduleForService(MonitoredService service) {
+        CheckSchedule schedule = new CheckSchedule();
+        schedule.setServiceId(service.getId());
+        schedule.setIntervalSeconds(300); // Default 5 minutes
+        schedule.setIsEnabled(true);
+        schedule.setTimezone("UTC");
+        schedule.setNextRunTime(LocalDateTime.now().plusSeconds(30)); // Start in 30 seconds
+        schedule.setCreatedAt(LocalDateTime.now());
+        schedule.setUpdatedAt(LocalDateTime.now());
+        
+        return schedule;
+    }
+    
+    /**
      * Gets scheduler status information.
      * 
      * @return Status information about the scheduler
      */
     public SchedulerStatus getSchedulerStatus() {
         try {
-            // TODO: Implement status collection
-            // This would gather information about running jobs, next execution times, etc.
+            // Get actual status from the scheduler service
+            int activeJobs = schedulerService.getActiveJobCount();
+            int totalJobs = schedulerService.getTotalJobCount();
+            boolean isRunning = schedulerService.isRunning();
             
             return new SchedulerStatus(
-                    true, // isRunning
-                    0,    // activeJobs (to be implemented)
-                    0,    // totalJobs (to be implemented)
+                    isRunning,
+                    activeJobs,
+                    totalJobs,
                     schedulerProperties.getThreadCount(),
                     schedulerProperties.isClustered()
             );

@@ -74,7 +74,7 @@ public class TelegramProvider implements ChannelProvider {
 
             ClientResponse resp = respMono.block(Duration.ofSeconds(15));
             if (resp == null) return new DeliveryResult(false, null, "No response", null);
-            int code = resp.rawStatusCode();
+            int code = resp.statusCode().value();
             if (code == 200) return new DeliveryResult(true, code, null, null);
 
             Long retry = null;

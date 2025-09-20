@@ -12,7 +12,7 @@ services:
       POSTGRES_PASSWORD: dev123
     volumes:
       # инициализация БД
-      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./postgres:/docker-entrypoint-initdb.d/
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U monitoring -d monitoring"]
@@ -59,6 +59,8 @@ services:
       context: ../backend
       dockerfile: Dockerfile
     container_name: pingtower-backend
+    ports:
+      - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/monitoring

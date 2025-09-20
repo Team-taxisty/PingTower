@@ -1,6 +1,7 @@
 package taxisty.pingtower.backend.scheduler.service;
 
 import org.quartz.*;
+import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -175,11 +176,100 @@ public class SchedulerService {
         return TriggerKey.triggerKey("monitoring-trigger-" + serviceId, TRIGGER_GROUP);
     }
     
+    /**
+     * Stops all running monitoring jobs.
+     * 
+     * @throws SchedulerException If stopping jobs fails
+     */
+    public void stopAll() throws SchedulerException {
+        if (scheduler.isStarted()) {
+            scheduler.pauseAll();
+            logger.info("Paused all monitoring jobs");
+        }
+    }
+    
+    /**
+     * Gets the number of currently active jobs.
+     * 
+     * @return Number of active jobs
+     * @throws SchedulerException If retrieval fails
+     */
+    public int getActiveJobCount() throws SchedulerException {
+        return scheduler.getCurrentlyExecutingJobs().size();
+    }
+    
+    /**
+     * Gets the total number of scheduled jobs.
+     * 
+     * @return Total number of jobs
+     * @throws SchedulerException If retrieval fails
+     */
+    public int getTotalJobCount() throws SchedulerException {
+        return scheduler.getJobKeys(GroupMatcher.jobGroupEquals(JOB_GROUP)).size();
+    }
+    
+    /**
+     * Checks if the scheduler is running.
+     * 
+     * @return true if scheduler is running, false otherwise
+     * @throws SchedulerException If check fails
+     */
+    public boolean isRunning() throws SchedulerException {
+        return scheduler.isStarted() && !scheduler.isInStandbyMode();
+    }
+    
     private String getScheduleDescription(CheckSchedule schedule) {
         if (schedule.cronExpression() != null && !schedule.cronExpression().isBlank()) {
             return "cron: " + schedule.cronExpression();
         } else {
             return "interval: " + schedule.intervalSeconds() + "s";
         }
+    }
+    
+    // Adapter methods for controller compatibility
+    
+    /**
+     * Schedule monitoring for a service using its internal configuration
+     */
+    public void scheduleService(MonitoredService service) throws SchedulerException {
+        // Create a default schedule based on the service's check interval
+        CheckSchedule defaultSchedule = new CheckSchedule(
+                null, // id
+                service.getId(), // serviceId
+                null, // cronExpression
+                service.getCheckIntervalMinutes() * 60, // intervalSeconds
+                true, // isEnabled
+                "UTC", // timezone
+                null, // nextRunTime (will be calculated)
+                LocalDateTime.now(), // createdAt
+                LocalDateTime.now() // updatedAt
+        );
+        scheduleMonitoring(service, defaultSchedule);
+    }
+    
+    /**
+     * Reschedule monitoring for a service using its internal configuration
+     */
+    public void rescheduleService(MonitoredService service) throws SchedulerException {
+        // Create a default schedule based on the service's check interval
+        CheckSchedule newSchedule = new CheckSchedule(
+                null, // id
+                service.getId(), // serviceId
+                null, // cronExpression
+                service.getCheckIntervalMinutes() * 60, // intervalSeconds
+                true, // isEnabled
+                "UTC", // timezone
+                null, // nextRunTime (will be calculated)
+                LocalDateTime.now(), // createdAt
+                LocalDateTime.now() // updatedAt
+        );
+        rescheduleMonitoring(service, newSchedule);
+    }
+    
+    /**
+     * Unschedule monitoring for a service by ID
+     */
+    public void unscheduleService(Long serviceId) throws SchedulerException {
+        unscheduleMonitoring(serviceId);
     }
 }
