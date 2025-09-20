@@ -24,7 +24,7 @@ function Reports() {
     { time: '20:00', avg: 130, p95: 190, p99: 280 }
   ];
 
-  const containerStyle = { maxWidth: 1200, margin: '0 auto', padding: 24, color: '#1a1a1a' };
+  const containerStyle = { maxWidth: 1200, margin: '0 auto', padding: 24, color: '#1a1a1a', width: '100%', paddingLeft: 0 };
   const headerStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 };
   const titleStyle = { margin: 0, fontSize: 24, fontWeight: 700, color: '#6D0475' };
   const controlsStyle = { display: 'flex', gap: 16, alignItems: 'center' };
@@ -68,8 +68,7 @@ function Reports() {
             <option value="auth">Auth Service</option>
             <option value="payments">Payments</option>
           </select>
-          <button style={buttonStyle}>📄 PDF</button>
-          <button style={buttonStyle}>📊 CSV</button>
+          <button style={buttonStyle}>Export PDF</button>
         </div>
       </div>
 

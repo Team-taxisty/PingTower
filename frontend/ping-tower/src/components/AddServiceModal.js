@@ -23,7 +23,7 @@ function AddServiceModal({ open, onClose, onSubmit }) {
   };
   const label = { fontSize: 12, color: '#6D0475', fontWeight: 600 };
   const input = {
-    width: '100%', borderRadius: '8px', border: '1px solid #E5B8E8', padding: '10px 12px',
+    width: '97%', borderRadius: '8px', border: '1px solid #E5B8E8', padding: '10px 12px', paddingRight: '0',
     fontSize: '14px', color: '#1a1a1a', background: '#ffffff'
   };
   const actions = { display: 'flex', gap: '12px', justifyContent: 'flex-end' };
@@ -37,13 +37,13 @@ function AddServiceModal({ open, onClose, onSubmit }) {
       <div style={modal} onClick={(e) => e.stopPropagation()}>
         <div style={{ fontWeight: 600, fontSize: 16, color: '#6D0475' }}>Новый сервис</div>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ flexDirection: 'column', gap: 6, display: 'flex' }}>
             <label style={label} htmlFor="name">Название</label>
-            <input style={input} id="name" name="name" type="text" placeholder="Напр. API Gateway" required />
+            <input style={input} id="name" name="name" type="text" required />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={label} htmlFor="url">URL (необязательно)</label>
-            <input style={input} id="url" name="url" type="url" placeholder="https://service.example.com/health" />
+            <label style={label} htmlFor="url">URL</label>
+            <input style={input} id="url" name="url" type="url" required />
           </div>
           <div style={actions}>
             <button type="button" style={{ ...btn, background: '#ffffff', color: '#6D0475' }} onClick={onClose}>Отмена</button>
