@@ -8,6 +8,7 @@ import threading
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+from email_notifier import EmailNotifier
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -22,6 +23,9 @@ bot = telebot.TeleBot(BOT_TOKEN)
 
 # Flask приложение для API
 app = Flask(__name__)
+
+# Инициализация email notifier
+email_notifier = EmailNotifier()
 
 # Инициализация базы данных
 def init_database():
@@ -235,8 +239,24 @@ def send_notification():
             notification_text += f"💬 **Детали:** {message}\n"
         notification_text += f"⏰ **Время:** {timestamp}"
         
-        # Отправляем уведомление
+        # Отправляем уведомление в Telegram
         bot.send_message(chat_id, notification_text, parse_mode='Markdown')
+        
+        # Отправляем уведомление по email (если настроен)
+        user_email = data.get('email')  # Опциональный email в запросе
+        if user_email:
+            email_success = email_notifier.send_notification(
+                to_email=user_email,
+                username=username,
+                service_name=service_name,
+                service_url=service_url,
+                status=status,
+                message=message
+            )
+            if email_success:
+                logger.info(f"Email notification sent to {user_email}")
+            else:
+                logger.warning(f"Failed to send email notification to {user_email}")
         
         conn.close()
         logger.info(f"Notification sent successfully to user {username} (chat_id: {chat_id})")
