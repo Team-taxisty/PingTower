@@ -14,7 +14,7 @@ import java.net.URI;
 import java.util.*;
 
 @RestController
-@RequestMapping("/checks")
+@RequestMapping("/api/checks")
 public class ChecksController {
     private final CheckService checkService;
     private final IdempotencyService idempotencyService;
