@@ -16,7 +16,7 @@ import taxisty.pingtower.backend.storage.model.NotificationDelivery;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Service
+@Service("notificationDeliveryService")
 public class NotificationService {
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
@@ -79,4 +79,3 @@ public class NotificationService {
         return delivery;
     }
 }
-

@@ -1,78 +1,78 @@
-# Monitoring Package
+# Пакет Monitoring
 
-The monitoring package provides comprehensive web service monitoring capabilities for the PingTower system. It implements a hybrid architecture using PostgreSQL for structured data and recent results, and ClickHouse for time series analytics and historical data storage.
+Пакет мониторинга предоставляет расширенные возможности мониторинга веб‑сервисов для системы PingTower. Он реализует гибридную архитектуру с использованием PostgreSQL для структурированных данных и последних результатов, а также ClickHouse для аналитики временных рядов и хранения исторических данных.
 
-## Architecture
+## Архитектура
 
-The monitoring package consists of several key components:
+Пакет мониторинга состоит из нескольких ключевых компонентов:
 
-### Configuration (`config/`)
-- **ClickHouseConfig**: Configuration for ClickHouse time series database connection
-- **MonitoringProperties**: Application properties for monitoring system configuration
-- **MessagingConfig**: Configuration constants for RabbitMQ messaging (to be expanded)
+### Конфигурация (`config/`)
+- **ClickHouseConfig**: конфигурация подключения к базе временных рядов ClickHouse
+- **MonitoringProperties**: свойства приложения для настройки системы мониторинга
+- **MessagingConfig**: константы конфигурации для обмена сообщениями RabbitMQ (будет расширено)
 
-### Repository Layer (`repository/`)
-- **ClickHouseRepository**: Interface for time series data operations
-- **ClickHouseRepositoryImpl**: High-performance implementation using ClickHouse for analytics
-- **MonitoredServiceRepository**: PostgreSQL JPA repository for service configuration management
-- **CheckResultRepository**: PostgreSQL JPA repository for recent check results
+### Слой репозиториев (`repository/`)
+- **ClickHouseRepository**: интерфейс для операций с данными временных рядов
+- **ClickHouseRepositoryImpl**: высокопроизводительная реализация аналитики на ClickHouse
+- **MonitoredServiceRepository**: JPA‑репозиторий PostgreSQL для управления конфигурацией сервисов
+- **CheckResultRepository**: JPA‑репозиторий PostgreSQL для последних результатов проверок
 
-### Service Layer (`service/`)
-- **MonitoringService**: Core service coordinating data flow between PostgreSQL and ClickHouse
-- **MonitoringAnalyticsService**: Service for aggregating metrics and generating reports
-- **MonitoredServiceManager**: CRUD operations for monitored services configuration
-- **DataSynchronizationService**: Handles data migration and synchronization between databases
+### Слой сервисов (`service/`)
+- **MonitoringService**: базовый сервис, координирующий поток данных между PostgreSQL и ClickHouse
+- **MonitoringAnalyticsService**: сервис для агрегации метрик и формирования отчетов
+- **MonitoredServiceManager**: CRUD‑операции для конфигурации мониторируемых сервисов
+- **DataSynchronizationService**: миграция и синхронизация данных между базами
 
-### Messaging (`messaging/`)
-- **MonitoringEventPublisher**: Interface for publishing monitoring events
-- **MonitoringEventConsumer**: Interface for consuming monitoring events
-- **SimpleMonitoringEventPublisher**: Basic implementation (to be replaced with RabbitMQ)
+### Обмен сообщениями (`messaging/`)
+- **MonitoringEventPublisher**: интерфейс публикации событий мониторинга
+- **MonitoringEventConsumer**: интерфейс потребления событий мониторинга
+- **SimpleMonitoringEventPublisher**: базовая реализация (будет заменена на RabbitMQ)
 
-## Key Features
+## Ключевые возможности
 
-### Time Series Analytics
-- High-performance storage in ClickHouse optimized for monitoring data
-- Automatic table partitioning by month with TTL policies
-- Efficient queries for uptime calculations, response time metrics, and trend analysis
+### Аналитика временных рядов
+- Высокопроизводительное хранилище в ClickHouse, оптимизированное под данные мониторинга
+- Автоматическое партиционирование таблиц по месяцам с политиками TTL
+- Эффективные запросы для расчета аптайма, метрик времени ответа и анализа трендов
 
-### Real-time Monitoring
-- Processing of check results from the scheduler
-- Service status determination (UP, DOWN, DEGRADED, UNKNOWN)
-- Dashboard data aggregation with real-time metrics
+### Мониторинг в реальном времени
+- Обработка результатов проверок от планировщика
+- Определение статуса сервиса (UP, DOWN, DEGRADED, UNKNOWN)
+- Агрегация данных для дашборда с метриками в реальном времени
 
-### SLA Reporting
-- Automated SLA compliance calculation
-- Downtime tracking and reporting
-- Performance trend analysis
+### Отчетность по SLA
+- Автоматический расчет соответствия SLA
+- Отслеживание и отчетность по простоям
+- Анализ трендов производительности
 
-### Data Management
-- Automatic cleanup of old monitoring data
-- Batch processing for high-volume data ingestion
-- Configurable retention policies
+### Управление данными
+- Автоматическая очистка старых данных мониторинга
+- Пакетная обработка для высоких объемов загрузки
+- Настраиваемые политики хранения
 
-## Database Architecture
+## Архитектура баз данных
 
-### PostgreSQL (Structured Data & Recent Results)
-- **MonitoredService**: Service configurations, user associations, monitoring settings
-- **CheckResult**: Recent check results (last 30 days) for fast dashboard access
-- **AlertRule**: Alert configuration and thresholds
-- **User**: User management and permissions
+### PostgreSQL (структурированные данные и последние результаты)
+- **MonitoredService**: конфигурации сервисов, привязка пользователей, настройки мониторинга
+- **CheckResult**: последние результаты проверок (за последние 30 дней) для быстрого доступа дашборда
+- **AlertRule**: конфигурация оповещений и пороги
+- **User**: управление пользователями и правами
 
-### ClickHouse (Time Series Analytics)
-- **check_results_ts**: Historical monitoring data with automatic partitioning
-- **service_metrics_ts**: Pre-aggregated metrics for different time periods
-- Optimized for analytical queries and large data volumes
-- TTL policies for automatic data cleanup
+### ClickHouse (аналитика временных рядов)
+- **check_results_ts**: исторические данные мониторинга с автоматическим партиционированием
+- **service_metrics_ts**: предагрегированные метрики для различных периодов
+- Оптимизировано для аналитических запросов и больших объемов данных
+- Политики TTL для автоматической очистки данных
 
-### Data Flow
-1. **Check Results**: Saved immediately to PostgreSQL, then replicated to ClickHouse
-2. **Historical Data**: Migrated from PostgreSQL to ClickHouse after 7 days
-3. **Analytics**: Performed on ClickHouse for optimal performance
-4. **Recent Data**: Retrieved from PostgreSQL for fast dashboard updates
+### Поток данных
+1. **Результаты проверок**: сразу сохраняются в PostgreSQL, затем реплицируются в ClickHouse
+2. **Исторические данные**: мигрируются из PostgreSQL в ClickHouse через 7 дней
+3. **Аналитика**: выполняется в ClickHouse для оптимальной производительности
+4. **Актуальные данные**: извлекаются из PostgreSQL для быстрых обновлений дашборда
 
-## Configuration
+## Конфигурация
 
-Add the following properties to your `application.yaml`:
+Добавьте следующие свойства в ваш `application.yaml`:
 
 ```yaml
 monitoring:
@@ -88,78 +88,78 @@ monitoring:
     aggregation-periods: "1h,6h,1d,7d,30d"
 ```
 
-## Usage
+## Использование
 
-### Processing Check Results
+### Обработка результатов проверок
 ```java
 @Autowired
 private MonitoringService monitoringService;
 
-// Process a single check result
+// Обработка одного результата проверки
 monitoringService.processCheckResult(checkResult);
 
-// Process multiple results in batch
+// Пакетная обработка нескольких результатов
 monitoringService.processCheckResults(checkResults);
 ```
 
-### Getting Dashboard Data
+### Получение данных дашборда
 ```java
-// Get monitoring dashboard data for a service
+// Получение данных дашборда мониторинга для сервиса
 LocalDateTime start = LocalDateTime.now().minusHours(24);
 LocalDateTime end = LocalDateTime.now();
 MonitoringDashboardData dashboardData = 
     monitoringService.getDashboardData(serviceId, start, end);
 ```
 
-### Generating SLA Reports
+### Формирование отчетов SLA
 ```java
 @Autowired
 private MonitoringAnalyticsService analyticsService;
 
-// Generate SLA report for the last month
+// Генерация отчета SLA за последний месяц
 LocalDateTime start = LocalDateTime.now().minusDays(30);
 LocalDateTime end = LocalDateTime.now();
 SLAReport report = analyticsService.generateSLAReport(serviceId, start, end);
 ```
 
-## Integration Points
+## Точки интеграции
 
-### With Scheduler Package
-The monitoring package receives check results from the scheduler package through:
-- Direct method calls
-- Message queue events (when RabbitMQ is implemented)
+### С пакетом Scheduler
+Пакет мониторинга получает результаты проверок от пакета планировщика через:
+- Прямые вызовы методов
+- События очереди сообщений (после внедрения RabbitMQ)
 
-### With Storage Package
-The monitoring package uses models from the storage package:
-- `CheckResult`: Individual check result data
-- `ServiceMetrics`: Aggregated service metrics
-- `MonitoredService`: Service configuration (read-only)
+### С пакетом Storage
+Пакет мониторинга использует модели из пакета хранения:
+- `CheckResult`: данные отдельного результата проверки
+- `ServiceMetrics`: агрегированные метрики сервиса
+- `MonitoredService`: конфигурация сервиса (только чтение)
 
-### With API Package
-The monitoring package can be exposed through REST endpoints for:
-- Dashboard data retrieval
-- SLA report generation
-- Service status queries
+### С пакетом API
+Пакет мониторинга может быть опубликован через REST‑эндпоинты для:
+- Получения данных дашборда
+- Генерации отчетов SLA
+- Запросов статуса сервиса
 
-## Future Enhancements
+## Дальнейшее развитие
 
-1. **RabbitMQ Integration**: Replace simple messaging with full RabbitMQ implementation
-2. **Alert Processing**: Integrate with alert rules and notification system
-3. **Real-time Streaming**: Add support for real-time data streaming
-4. **Advanced Analytics**: Machine learning-based anomaly detection
-5. **Multi-region Support**: Cross-region monitoring and aggregation
+1. **Интеграция RabbitMQ**: заменить простую реализацию обмена сообщениями на полноценный RabbitMQ
+2. **Обработка оповещений**: интеграция с правилами оповещений и системой уведомлений
+3. **Потоковая обработка в реальном времени**: поддержка real‑time стриминга данных
+4. **Продвинутая аналитика**: обнаружение аномалий на основе машинного обучения
+5. **Мульти‑региональная поддержка**: кросс‑региональный мониторинг и агрегация
 
-## Performance Considerations
+## Особенности производительности
 
-- ClickHouse is optimized for analytical queries on time series data
-- Batch processing reduces individual insert overhead
-- Automatic data partitioning improves query performance
-- TTL policies manage storage growth automatically
-- Indexes on service_id and timestamp columns optimize common queries
+- ClickHouse оптимизирован для аналитических запросов по временным рядам
+- Пакетная обработка снижает накладные расходы на отдельные вставки
+- Автоматическое партиционирование улучшает производительность запросов
+- Политики TTL автоматически управляют ростом объема данных
+- Индексы по столбцам `service_id` и `timestamp` оптимизируют частые запросы
 
-## Dependencies
+## Зависимости
 
-Required dependencies in `build.gradle`:
-- `com.clickhouse:clickhouse-jdbc:0.6.5` - ClickHouse JDBC driver
-- `org.springframework.boot:spring-boot-starter-amqp` - RabbitMQ support (for future use)
-- Standard Spring Boot starters for JPA, web, and validation
+Необходимые зависимости в `build.gradle`:
+- `com.clickhouse:clickhouse-jdbc:0.6.5` — драйвер ClickHouse JDBC
+- `org.springframework.boot:spring-boot-starter-amqp` — поддержка RabbitMQ (для будущего использования)
+- Стандартные стартеры Spring Boot для JPA, web и validation
