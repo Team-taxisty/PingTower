@@ -33,8 +33,21 @@ jobs:
         npm ci
         CI=false npm run build
         
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Build Bot
+      run: |
+        cd bot
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        python -m py_compile monitoring_bot.py
+        echo "✅ Bot build successful!"
+        
     - name: Build Success
-      run: echo "✅ Build completed!"
+      run: echo "✅ All components built successfully!"
 
   deploy:
     needs: build
@@ -53,5 +66,27 @@ jobs:
           cd docker
           docker compose down || true
           docker compose up -d --build
+          
+          # Wait for all services including bot
+          sleep 30
+          
+          # Check bot is running
+          bot_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/bot/health || echo "000")
+          
+          if [ "$bot_status" = "200" ]; then
+            # Send deployment notification via bot
+            curl -X POST http://localhost/bot/send_notification \
+              -H "Content-Type: application/json" \
+              -d '{
+                "service_name": "🚀 PingTower Deployment",
+                "status": "up",
+                "service_url": "http://203.81.208.67",
+                "message": "All services deployed successfully! 🎉\n\n✅ Backend\n✅ Frontend\n✅ Bot API\n\nCommit: ${{ github.sha }}\nAuthor: ${{ github.actor }}",
+                "timestamp": "'$(date)'"
+              }' || echo "Bot notification failed"
+          else
+            echo "⚠️ Bot not responding, notification skipped"
+          fi
+          
           echo "✅ PingTower deployed successfully!"
           docker compose ps
