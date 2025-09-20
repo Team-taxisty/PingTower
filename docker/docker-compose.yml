@@ -5,7 +5,7 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: pingtower-postgres
-    ports: ["5432:5432"]
+    ports: ["5433:5432"]
     environment:
       POSTGRES_DB: monitoring
       POSTGRES_USER: monitoring

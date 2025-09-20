@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/monitoring
+    username: monitoring
+    password: dev123
+  # Optional: Mailhog in docker
+  mail:
+    host: mailhog
+    port: 1025
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
+
+monitoring:
+  clickhouse:
+    # Use Docker service hostname, not localhost
+    url: jdbc:clickhouse://clickhouse:8123/monitoring
+    username: default
+    password: ""
