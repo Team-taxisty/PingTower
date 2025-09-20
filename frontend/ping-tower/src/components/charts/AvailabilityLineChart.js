@@ -10,7 +10,7 @@ function AvailabilityLineChart({ points }) {
       boundaryGap: false,
       data: points.map((p) => p.t),
       axisLine: { lineStyle: { color: '#374151' } },
-      axisLabel: { color: '#9ca3af' },
+      axisLabel: { color: '#000' },
       axisTick: { show: false }
     },
     yAxis: {
