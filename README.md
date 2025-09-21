@@ -71,13 +71,13 @@
 2. Откройте веб‑дашборд и добавьте первый сервис (URL сайта или API).
 3. Подключите уведомления (Email/Telegram/Webhook) — получайте алёрты о сбоях.
 
-[Руководство по быстрому запуску](../docs/DEPLOYMENT.md)
+[Руководство по быстрому запуску](../main/docs/DEPLOYMENT.md)
 
 ---
 
 <h1 align="center">Архитектура системы</h1>
 
-[Схема архитектуры системы](../docs/diagrams/PingTowerC4Diagram.drawio)
+[Схема архитектуры системы](../main/docs/diagrams/PingTowerC4Diagram.drawio)
 
 <img width="1472" height="722" alt="PingTowerC4Diagram drawio (2)" src="https://github.com/user-attachments/assets/c6b4c3c1-4e5f-414c-9535-ae3402e35fcb" />
 
@@ -85,7 +85,7 @@
 
 <h1 align="center">Схема базы данных</h1>
 
-[Схема базы данных системы](../docs/diagrams/PingTower-DB-Diagram.io)
+[Схема базы данных системы](../main/docs/diagrams/PingTower-DB-Diagram.io)
 
 <img width="1464" height="1318" alt="PingTower-DB-Diagram" src="https://github.com/user-attachments/assets/28b9d8d4-11ea-4d74-9881-8a0a7540567a" />
 
