@@ -2,3 +2,4 @@ Flask==3.1.2
 requests==2.32.5
 python-dotenv==1.1.1
 gunicorn==21.2.0
+pyTelegramBotAPI==4.21.0

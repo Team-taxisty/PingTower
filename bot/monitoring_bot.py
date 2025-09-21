@@ -160,7 +160,9 @@ def store_registration_link(username: str, token: str) -> str:
     return token
 
 
-def bind_token_to_chat(token: str, chat_id: int, telegram_username: str | None = None):
+from typing import Optional
+
+def bind_token_to_chat(token: str, chat_id: int, telegram_username: Optional[str] = None):
     """Поглощаем токен и привязываем Telegram-чат к аккаунту платформы."""
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
@@ -234,7 +236,7 @@ def bind_token_to_chat(token: str, chat_id: int, telegram_username: str | None =
     return True, {"status": action, "username": username}
 
 
-def process_linking_code(chat_id: int, code: str, telegram_username: str | None = None) -> bool:
+def process_linking_code(chat_id: int, code: str, telegram_username: Optional[str] = None) -> bool:
     code = (code or "").strip()
     if not code:
         return False

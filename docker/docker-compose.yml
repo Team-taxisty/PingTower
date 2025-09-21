@@ -107,7 +107,7 @@ services:
     environment:
       BOT_TOKEN: "7479905970:AAGRDlnda26Aw6Bfbq9HyaPWFmOQt1aAb3o"
       FLASK_PORT: 5000
-      SMTP_SERVER: mailhog
+      SMTP_HOST: mailhog
       SMTP_PORT: 1025
     volumes:
       - bot_data:/app/data
