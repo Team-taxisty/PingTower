@@ -29,7 +29,7 @@ function App() {
     try {
       const [servicesResponse, dashboardResponse] = await Promise.all([
         api('/v1/api/services'), // Получаем список всех сервисов
-        api('/api/v1/monitoring/dashboard') // Получаем статусы для дашборда
+        api('/v1/api/monitoring/dashboard') // Получаем статусы для дашборда
       ]);
 
       let fetchedServices = [];
@@ -182,6 +182,7 @@ function App() {
           Добавить новый сервис
         </button>
       </div>
+      {error && <div style={{ color: 'red', marginBottom: 16 }}>{error}</div>}
       {isLoading ? (
         <div>Загрузка сервисов...</div>
       ) : (
@@ -257,6 +258,7 @@ function App() {
     <div style={{ fontFamily: 'Inter, sans-serif', background: '#f8f9fa', minHeight: '100vh' }}>
       {isLoggedIn && <Navigation currentPage={currentPage} onNavigate={setCurrentPage} onLogout={handleLogout} />}
       {content}
+      {error && <div style={{ color: 'red', marginBottom: '16px', padding: '10px', border: '1px solid red', borderRadius: '8px', textAlign: 'center' }}>{error}</div>}
       <AddCheckModal
         open={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}

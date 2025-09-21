@@ -1,18 +1,18 @@
 import CheckItem from './CheckItem';
 
-function CheckList({ checks, onCheckClick }) {
-  if (!checks || checks.length === 0) {
+function CheckList({ services, onServiceClick }) {
+  if (!services || services.length === 0) {
     return (
       <div style={{ color: '#6b7280', fontSize: '14px' }}>
-        Нет проверок. Нажмите «Добавить новую проверку».
+        Нет сервисов. Нажмите «Добавить новый сервис» для начала.
       </div>
     );
   }
 
   return (
     <div style={{ display: 'grid', gap: '10px', overflow: 'hidden' }}>
-      {checks.map((check) => (
-        <CheckItem key={check.id} check={check} onClick={() => onCheckClick && onCheckClick(check)} />
+      {services.map((service) => (
+        <CheckItem key={service.id} check={service} onClick={() => onServiceClick && onServiceClick(service)} />
       ))}
     </div>
   );
