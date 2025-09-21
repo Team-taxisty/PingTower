@@ -14,22 +14,22 @@ function Auth({ onAuthSuccess }) {
     const newErrors = {};
     if (!isLogin) {
       if (!name.trim()) {
-        newErrors.name = 'РРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ';
+        newErrors.name = 'Имя пользователя обязательно';
       } else if (name.trim().length < 3) {
-        newErrors.name = 'РРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ РЅРµ РјРµРЅРµРµ 3 СЃРёРјРІРѕР»РѕРІ';
+        newErrors.name = 'Имя пользователя должно быть не менее 3 символов';
       } else if (name.trim().length > 50) {
-        newErrors.name = 'РРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ РЅРµ Р±РѕР»РµРµ 50 СЃРёРјРІРѕР»РѕРІ';
+        newErrors.name = 'Имя пользователя должно быть не более 50 символов';
       }
     }
     if (!email.trim()) {
-      newErrors.email = 'Email РѕР±СЏР·Р°С‚РµР»РµРЅ';
+      newErrors.email = 'Email обязателен';
     } else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
-      newErrors.email = 'РќРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚ Email';
+      newErrors.email = 'Неверный формат Email';
     }
     if (!password.trim()) {
-      newErrors.password = 'РџР°СЂРѕР»СЊ РѕР±СЏР·Р°С‚РµР»РµРЅ';
+      newErrors.password = 'Пароль обязателен';
     } else if (password.length < 6) {
-      newErrors.password = 'РџР°СЂРѕР»СЊ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РЅРµ РјРµРЅРµРµ 6 СЃРёРјРІРѕР»РѕРІ';
+      newErrors.password = 'Пароль должен быть не менее 6 символов';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -70,7 +70,7 @@ function Auth({ onAuthSuccess }) {
           localStorage.setItem('username', data.username);
           localStorage.setItem('email', data.email);
 
-          let successMessage = isLogin ? 'Login successful!' : 'Registration completed!';
+          let successMessage = isLogin ? 'Вход выполнен успешно!' : 'Регистрация завершена!';
 
           if (!isLogin && data.id) {
             const telegramLink = 'https://t.me/PingTower_tax_bot?start=' + data.id;
@@ -84,17 +84,17 @@ function Auth({ onAuthSuccess }) {
               console.warn('Failed to open Telegram link automatically', openError);
             }
 
-            successMessage += ' Open Telegram: ' + telegramLink;
+            successMessage += ' Откройте Telegram: ' + telegramLink;
           }
 
           setMessage({ type: 'success', text: successMessage });
           onAuthSuccess();
         } else {
-          setMessage({ type: 'error', text: data.message || 'РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР° Р°РІС‚РѕСЂРёР·Р°С†РёРё.' });
+          setMessage({ type: 'error', text: data.message || 'Произошла ошибка авторизации.' });
         }
       } catch (error) {
         console.error('API Error:', error);
-        setMessage({ type: 'error', text: 'РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР°. РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РїРѕРїСЂРѕР±СѓР№С‚Рµ СЃРЅРѕРІР°.' });
+        setMessage({ type: 'error', text: 'Произошла ошибка. Пожалуйста, попробуйте снова.' });
       } finally {
         setIsLoading(false);
       }
@@ -175,11 +175,11 @@ function Auth({ onAuthSuccess }) {
 
   return (
     <div style={formContainerStyle}>
-      <h2 style={titleStyle}>{isLogin ? 'Р’С…РѕРґ' : 'Р РµРіРёСЃС‚СЂР°С†РёСЏ'}</h2>
+      <h2 style={titleStyle}>{isLogin ? 'Вход' : 'Регистрация'}</h2>
       <form onSubmit={handleSubmit}>
         {!isLogin && (
           <div style={formGroupStyle}>
-            <label htmlFor="name" style={labelStyle}>РРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ</label>
+            <label htmlFor="name" style={labelStyle}>Имя пользователя</label>
             <input
               type="text"
               id="name"
@@ -204,7 +204,7 @@ function Auth({ onAuthSuccess }) {
           {errors.email && <p style={errorTextStyle}>{errors.email}</p>}
         </div>
         <div style={formGroupStyle}>
-          <label htmlFor="password" style={labelStyle}>РџР°СЂРѕР»СЊ</label>
+          <label htmlFor="password" style={labelStyle}>Пароль</label>
           <input
             type="password"
             id="password"
@@ -220,10 +220,10 @@ function Auth({ onAuthSuccess }) {
             {message.text}
           </p>
         )}
-        <button type="submit" style={buttonStyle} disabled={isLoading}>{isLogin ? (isLoading ? 'Р’С…РѕРґ...' : 'Р’РѕР№С‚Рё') : (isLoading ? 'Р РµРіРёСЃС‚СЂР°С†РёСЏ...' : 'Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊСЃСЏ')}</button>
+        <button type="submit" style={buttonStyle} disabled={isLoading}>{isLogin ? (isLoading ? 'Вход...' : 'Войти') : (isLoading ? 'Регистрация...' : 'Зарегистрироваться')}</button>
       </form>
       <button onClick={handleToggle} style={toggleButtonStyle} disabled={isLoading}>
-        {isLogin ? 'РќРµС‚ Р°РєРєР°СѓРЅС‚Р°? Р—Р°СЂРµРіРёСЃС‚СЂРёСЂСѓР№С‚РµСЃСЊ' : 'РЈР¶Рµ РµСЃС‚СЊ Р°РєРєР°СѓРЅС‚? Р’РѕР№РґРёС‚Рµ'}
+        {isLogin ? 'Нет аккаунта? Зарегистрируйтесь' : 'Уже есть аккаунт? Войдите'}
       </button>
     </div>
   );
