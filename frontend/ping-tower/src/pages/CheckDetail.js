@@ -184,9 +184,11 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) {
           <div style={cardStyle}>
             <h3 style={{ margin: '0 0 16px 0', color: '#6D0475', fontSize: 18, fontWeight: 600 }}>Метрики за 24 часа</h3>
             <div style={{ height: 300 }}>
-              {processedRunsData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={processedRunsData}>
+              {(() => {
+                console.log('CheckDetail chart data:', processedRunsData);
+                return processedRunsData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={processedRunsData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5B8E8" />
                     <XAxis dataKey="time" stroke="#6D0475" />
                     <YAxis yAxisId="left" stroke="#6D0475" />
@@ -220,7 +222,8 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) {
                 }}>
                   {isLoadingData ? 'Загрузка данных...' : 'Нет данных для отображения графика'}
                 </div>
-              )}
+              );
+              })()}
             </div>
           </div>
 

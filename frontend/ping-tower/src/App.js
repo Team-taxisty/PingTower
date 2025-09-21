@@ -193,15 +193,22 @@ function App() {
             </div>
             <div style={{ background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' }}>
               <div style={{ fontSize: 12, color: '#6D0475', fontWeight: 600, marginBottom: 8 }}>Статус</div>
-              <StatusPieChart data={{
-                ok: services.filter(s => s.status === 'UP').length,
-                down: services.filter(s =>
+              {(() => {
+                const okCount = services.filter(s => s.status === 'UP').length;
+                const downCount = services.filter(s =>
                   s.status === 'DOWN' ||
                   s.status === 'DEGRADED' ||
                   s.status === 'UNKNOWN' ||
                   s.status === 'ERROR'
-                ).length,
-              }} />
+                ).length;
+                console.log('Dashboard chart data:', { ok: okCount, down: downCount });
+                return (
+                  <StatusPieChart data={{
+                    ok: okCount,
+                    down: downCount,
+                  }} />
+                );
+              })()}
             </div>
           </div>
           <CheckList services={services} onServiceClick={handleServiceClick} />
