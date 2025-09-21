@@ -17,11 +17,12 @@ spring:
 # OpenAPI/Swagger configuration
 springdoc:
   api-docs:
-    path: /v3/api-docs
+    enabled: false
   swagger-ui:
     enabled: true
     path: /swagger-ui
-    url: /v3/api-docs
+    url: /openapi.yaml
+    disable-swagger-default-url: true
 
 # PingTower Scheduler Configuration
 pingtower:
@@ -45,3 +46,5 @@ logging:
   level:
     taxisty.pingtower.backend.api.controller.MonitoredServiceController: DEBUG
     org.springframework.security: DEBUG
+    org.springdoc: DEBUG
+    org.springframework.web: INFO

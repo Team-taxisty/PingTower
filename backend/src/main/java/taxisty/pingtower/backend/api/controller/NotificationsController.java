@@ -14,11 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import taxisty.pingtower.backend.api.dto.NotificationRequest;
 import taxisty.pingtower.backend.api.dto.TestNotificationRequest;
@@ -31,7 +26,6 @@ import taxisty.pingtower.backend.storage.model.NotificationDelivery;
 
 @RestController
 @RequestMapping("/api/notifications")
-@Tag(name = "Уведомления", description = "API для управления каналами уведомлений и отправки уведомлений")
 public class NotificationsController {
     private final InMemoryNotificationRepository repo;
     private final NotificationService service;
@@ -42,11 +36,6 @@ public class NotificationsController {
     }
 
     @PostMapping("/channels/create")
-    @Operation(summary = "Создать канал уведомлений", description = "Создает новый канал для отправки оповещений")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Канал создан успешно"),
-        @ApiResponse(responseCode = "400", description = "Некорректные данные запроса")
-    })
     public ResponseEntity<NotificationChannel> createChannel(@Valid @RequestBody CreateNotificationChannelRequest req) {
         if (!StringUtils.hasText(req.type()) || !StringUtils.hasText(req.name())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
@@ -56,10 +45,6 @@ public class NotificationsController {
     }
 
     @GetMapping("/channels/list")
-    @Operation(summary = "Получить каналы уведомлений", description = "Возвращает все настроенные каналы уведомлений")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Каналы успешно получены")
-    })
     public Map<String, Object> listChannels() {
         Map<String, Object> resp = new HashMap<>();
         resp.put("items", repo.listChannels());
@@ -67,10 +52,6 @@ public class NotificationsController {
     }
 
     @GetMapping("/deliveries")
-    @Operation(summary = "Получить доставки уведомлений", description = "Возвращает все записи о доставке уведомлений")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Записи успешно получены")
-    })
     public Map<String, Object> listDeliveries() {
         Map<String, Object> resp = new HashMap<>();
         resp.put("items", repo.listDeliveries());
@@ -78,12 +59,7 @@ public class NotificationsController {
     }
 
     @PostMapping("/test")
-    @Operation(summary = "Отправить тестовое уведомление", description = "Отправляет тестовое уведомление для проверки конфигурации канала")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Тестовое уведомление отправлено"),
-        @ApiResponse(responseCode = "404", description = "Канал не найден")
-    })
-    public ResponseEntity<NotificationDelivery> sendTest(@Parameter(description = "ID канала") @RequestParam("channelId") Long channelId,
+    public ResponseEntity<NotificationDelivery> sendTest(@RequestParam("channelId") Long channelId,
                                                          @Valid @RequestBody TestNotificationRequest req) {
         NotificationChannel ch = repo.getChannel(channelId);
         if (ch == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -103,12 +79,6 @@ public class NotificationsController {
     }
 
     @PostMapping("/send")
-    @Operation(summary = "Отправить уведомление", description = "Отправляет уведомление через настроенные каналы")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Уведомление отправлено успешно"),
-        @ApiResponse(responseCode = "404", description = "Подходящий канал не найден"),
-        @ApiResponse(responseCode = "500", description = "Не удалось отправить уведомление")
-    })
     public ResponseEntity<Map<String, Object>> sendNotification(@Valid @RequestBody NotificationRequest req) {
         Map<String, Object> response = new HashMap<>();
         

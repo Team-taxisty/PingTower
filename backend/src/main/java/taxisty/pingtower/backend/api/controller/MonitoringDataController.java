@@ -14,11 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import taxisty.pingtower.backend.api.dto.CheckResultResponse;
 import taxisty.pingtower.backend.api.dto.ServiceMetricsResponse;
 import taxisty.pingtower.backend.monitoring.repository.CheckResultRepository;
@@ -33,7 +28,6 @@ import taxisty.pingtower.backend.storage.model.ServiceMetrics;
  */
 @RestController
 @RequestMapping("/api/monitoring")
-@Tag(name = "Мониторинг данных", description = "API для получения данных мониторинга и аналитики")
 public class MonitoringDataController {
 
     private final MonitoringService monitoringService;
@@ -53,15 +47,11 @@ public class MonitoringDataController {
      * Get recent check results for all services
      */
     @GetMapping("/results")
-    @Operation(summary = "Получить недавние результаты проверок", description = "Возвращает недавние результаты проверок для всех сервисов с фильтрацией")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Результаты успешно получены")
-    })
     public ResponseEntity<Page<CheckResultResponse>> getRecentResults(
             Pageable pageable,
-            @Parameter(description = "ID сервиса для фильтрации") @RequestParam(required = false) Long serviceId,
-            @Parameter(description = "Фильтр по успешности") @RequestParam(required = false) Boolean successful,
-            @Parameter(description = "Дата начала периода") @RequestParam(required = false) String since) {
+            @RequestParam(required = false) Long serviceId,
+            @RequestParam(required = false) Boolean successful,
+            @RequestParam(required = false) String since) {
         
         Page<CheckResult> results;
         LocalDateTime sinceTime = parseDateTimeParam(since, LocalDateTime.now().minusHours(24));
@@ -92,16 +82,11 @@ public class MonitoringDataController {
      * Get check results for a specific service
      */
     @GetMapping("/services/{serviceId}/results")
-    @Operation(summary = "Получить результаты проверок сервиса", description = "Возвращает результаты проверок для конкретного сервиса")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Результаты успешно получены"),
-        @ApiResponse(responseCode = "404", description = "Сервис не найден")
-    })
     public ResponseEntity<Page<CheckResultResponse>> getServiceResults(
-            @Parameter(description = "ID сервиса") @PathVariable Long serviceId,
+            @PathVariable Long serviceId,
             Pageable pageable,
-            @Parameter(description = "Дата начала периода") @RequestParam(required = false) String since,
-            @Parameter(description = "Дата окончания периода") @RequestParam(required = false) String until) {
+            @RequestParam(required = false) String since,
+            @RequestParam(required = false) String until) {
         
         // Verify service exists
         if (!serviceRepository.existsById(serviceId)) {
@@ -122,15 +107,9 @@ public class MonitoringDataController {
      * Get service metrics and analytics
      */
     @GetMapping("/services/{serviceId}/metrics")
-    @Operation(summary = "Получить метрики сервиса", description = "Возвращает метрики и аналитику для конкретного сервиса")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Метрики успешно получены"),
-        @ApiResponse(responseCode = "404", description = "Сервис не найден"),
-        @ApiResponse(responseCode = "500", description = "Ошибка сервера")
-    })
     public ResponseEntity<ServiceMetricsResponse> getServiceMetrics(
-            @Parameter(description = "ID сервиса") @PathVariable Long serviceId,
-            @Parameter(description = "Дата начала периода") @RequestParam(required = false) String since) {
+            @PathVariable Long serviceId,
+            @RequestParam(required = false) String since) {
         
         Optional<MonitoredService> serviceOpt = serviceRepository.findById(serviceId);
         if (serviceOpt.isEmpty()) {
@@ -152,11 +131,6 @@ public class MonitoringDataController {
      * Get overall system health metrics
      */
     @GetMapping("/health")
-    @Operation(summary = "Получить состояние системы", description = "Возвращает общие метрики здоровья системы")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Метрики успешно получены"),
-        @ApiResponse(responseCode = "500", description = "Ошибка сервера")
-    })
     public ResponseEntity<SystemHealthResponse> getSystemHealth() {
         try {
             // Get counts of active services
@@ -190,11 +164,6 @@ public class MonitoringDataController {
      * Get latest status for all services (dashboard summary)
      */
     @GetMapping("/dashboard")
-    @Operation(summary = "Получить данные дашборда", description = "Возвращает последние статусы всех сервисов для дашборда")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Данные успешно получены"),
-        @ApiResponse(responseCode = "500", description = "Ошибка сервера")
-    })
     public ResponseEntity<List<ServiceStatusResponse>> getDashboardData() {
         try {
             List<MonitoredService> activeServices = serviceRepository.findAllActive();
