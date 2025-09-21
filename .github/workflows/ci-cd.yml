@@ -9,21 +9,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up JDK 21
-      id: setup-java  # Добавьте ID для ссылки
       uses: actions/setup-java@v4
       with:
         java-version: '21'
         distribution: 'temurin'
-     
+
     - name: Build Backend
       run: |
         cd backend
         chmod +x gradlew
         ./gradlew build -x test
-      env:
-        JAVA_HOME: ${{ steps.setup-java.outputs.path }}  # Ссылка на вывод шага
      
     - name: Set up Node.js
       uses: actions/setup-node@v4
