@@ -116,18 +116,6 @@ curl -X POST http://localhost:5000/send_notification \
 - **Логирование** - Аудит всех операций
 - **CORS настройки** - Защита от межсайтовых запросов
 
-## Развертывание
-
-### Docker
-```bash
-docker-compose up -d
-```
-
-### Kubernetes
-```bash
-kubectl apply -f k8s/
-```
-
 ### Локальная разработка
 ```bash
 # Python Bot
