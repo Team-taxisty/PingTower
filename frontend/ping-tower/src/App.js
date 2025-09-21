@@ -90,8 +90,6 @@ function App() {
   };
 
   const handleAddService = async (newServiceData) => {
-    // Временное оповещение для отладки
-    alert('Attempting to add service: ' + JSON.stringify(newServiceData, null, 2));
     try {
       const response = await api('/v1/api/services', {
         method: 'POST',
@@ -100,19 +98,16 @@ function App() {
       if (response.ok) {
         fetchServicesAndStatuses(); // Обновляем оба списка после добавления
         setIsAddModalOpen(false);
-        alert('Service added successfully!');
       } else {
         const errorData = await response.json();
         console.error('Failed to add service:', errorData);
         const errorMessage = errorData.message || 'Ошибка при добавлении сервиса.';
         setError(errorMessage);
-        alert('Failed to add service: ' + errorMessage);
       }
     } catch (err) {
       console.error('Error adding service:', err);
       const errorMessage = 'Произошла ошибка при добавлении сервиса: ' + err.message;
       setError(errorMessage);
-      alert('Error adding service: ' + errorMessage);
     }
   };
 
@@ -187,7 +182,7 @@ function App() {
         <div>Загрузка сервисов...</div>
       ) : (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: '16px', marginBottom: '24px' }}>
             <div style={{ background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' }}>
               <div style={{ fontSize: 12, color: '#6D0475', fontWeight: 600, marginBottom: 8 }}>Работают</div>
               <div style={{ fontSize: 28, fontWeight: 700, color: '#10b981' }}>{services.filter(s => s.status === 'UP').length}</div>
