@@ -40,7 +40,7 @@ public class ClickHouseConfig {
         dataSource.setPassword(password);
         
         Properties properties = new Properties();
-        properties.setProperty("compress", "true");
+        // Removed compression settings to avoid LZ4 issues
         properties.setProperty("socket_timeout", "30000");
         properties.setProperty("connection_timeout", "10000");
         dataSource.setConnectionProperties(properties);

@@ -1,27 +1,33 @@
 package taxisty.pingtower.backend.api.controller;
 
-import jakarta.validation.Valid;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
-import taxisty.pingtower.backend.api.dto.TestNotificationRequest;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import taxisty.pingtower.backend.api.dto.NotificationRequest;
+import taxisty.pingtower.backend.api.dto.TestNotificationRequest;
 import taxisty.pingtower.backend.notifications.repo.InMemoryNotificationRepository;
 import taxisty.pingtower.backend.notifications.service.NotificationService;
 import taxisty.pingtower.backend.storage.dto.CreateNotificationChannelRequest;
 import taxisty.pingtower.backend.storage.model.Alert;
 import taxisty.pingtower.backend.storage.model.NotificationChannel;
 import taxisty.pingtower.backend.storage.model.NotificationDelivery;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
-
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -35,7 +41,7 @@ public class NotificationsController {
         this.service = service;
     }
 
-    @PostMapping("/channels")
+    @PostMapping("/channels/create")
     @Operation(summary = "Создать канал уведомлений", description = "Создает новый канал для отправки оповещений")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Канал создан успешно"),
@@ -49,7 +55,7 @@ public class NotificationsController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ch);
     }
 
-    @GetMapping("/channels")
+    @GetMapping("/channels/list")
     @Operation(summary = "Получить каналы уведомлений", description = "Возвращает все настроенные каналы уведомлений")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Каналы успешно получены")
