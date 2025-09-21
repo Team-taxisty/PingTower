@@ -32,7 +32,7 @@ public class ClickHouseRepositoryImpl implements ClickHouseRepository {
         if (checkResults.isEmpty()) return;
         
         String sql = """
-            INSERT INTO check_results_ts 
+            INSERT INTO monitoring.check_results_ts 
             (id, service_id, check_time, is_successful, response_code, response_time_ms, 
              response_body, error_message, ssl_valid, ssl_expiry_date, check_location)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -46,11 +46,11 @@ public class ClickHouseRepositoryImpl implements ClickHouseRepository {
                 result.isSuccessful() ? 1 : 0,
                 result.responseCode(),
                 result.responseTimeMs(),
-                result.responseBody(),
-                result.errorMessage(),
+                result.responseBody() != null ? result.responseBody() : "",
+                result.errorMessage() != null ? result.errorMessage() : "",
                 result.sslValid() ? 1 : 0,
                 result.sslExpiryDate() != null ? Timestamp.valueOf(result.sslExpiryDate()) : null,
-                result.checkLocation()
+                result.checkLocation() != null ? result.checkLocation() : ""
             );
         }
     }
@@ -60,7 +60,7 @@ public class ClickHouseRepositoryImpl implements ClickHouseRepository {
         if (serviceMetrics.isEmpty()) return;
         
         String sql = """
-            INSERT INTO service_metrics_ts 
+            INSERT INTO monitoring.service_metrics_ts 
             (id, service_id, period_start, period_end, uptime_percentage, 
              average_response_time_ms, max_response_time_ms, min_response_time_ms, 
              total_checks, successful_checks, failed_checks, aggregation_period)
@@ -90,7 +90,7 @@ public class ClickHouseRepositoryImpl implements ClickHouseRepository {
         String sql = """
             SELECT id, service_id, check_time, is_successful, response_code, response_time_ms,
                    response_body, error_message, ssl_valid, ssl_expiry_date, check_location
-            FROM check_results_ts
+            FROM monitoring.check_results_ts
             WHERE service_id = ? AND check_time BETWEEN ? AND ?
             ORDER BY check_time DESC
             """;
@@ -105,7 +105,7 @@ public class ClickHouseRepositoryImpl implements ClickHouseRepository {
             SELECT id, service_id, period_start, period_end, uptime_percentage,
                    average_response_time_ms, max_response_time_ms, min_response_time_ms,
                    total_checks, successful_checks, failed_checks, aggregation_period
-            FROM service_metrics_ts
+            FROM monitoring.service_metrics_ts
             WHERE service_id = ? AND period_start >= ? AND period_end <= ? 
             AND aggregation_period = ?
             ORDER BY period_start DESC
@@ -120,7 +120,7 @@ public class ClickHouseRepositoryImpl implements ClickHouseRepository {
         String sql = """
             SELECT 
                 (countIf(is_successful = 1) * 100.0) / count(*) as uptime_percentage
-            FROM check_results_ts
+            FROM monitoring.check_results_ts
             WHERE service_id = ? AND check_time BETWEEN ? AND ?
             """;
         
@@ -132,7 +132,7 @@ public class ClickHouseRepositoryImpl implements ClickHouseRepository {
     public Double getAverageResponseTime(Long serviceId, LocalDateTime start, LocalDateTime end) {
         String sql = """
             SELECT avg(response_time_ms) as avg_response_time
-            FROM check_results_ts
+            FROM monitoring.check_results_ts
             WHERE service_id = ? AND check_time BETWEEN ? AND ? AND is_successful = 1
             """;
         
@@ -156,7 +156,7 @@ public class ClickHouseRepositoryImpl implements ClickHouseRepository {
                 countIf(is_successful = 1) as successful_checks,
                 countIf(is_successful = 0) as failed_checks,
                 '1h' as aggregation_period
-            FROM check_results_ts
+            FROM monitoring.check_results_ts
             WHERE service_id = ? AND check_time BETWEEN ? AND ?
             GROUP BY service_id, toStartOfHour(check_time)
             ORDER BY period_start DESC
@@ -215,10 +215,10 @@ public class ClickHouseRepositoryImpl implements ClickHouseRepository {
     
     @Override
     public void cleanupOldData(LocalDateTime beforeDate) {
-        String sql = "ALTER TABLE check_results_ts DELETE WHERE check_time < ?";
+        String sql = "ALTER TABLE monitoring.check_results_ts DELETE WHERE check_time < ?";
         clickHouseJdbcTemplate.update(sql, Timestamp.valueOf(beforeDate));
         
-        String sql2 = "ALTER TABLE service_metrics_ts DELETE WHERE period_start < ?";
+        String sql2 = "ALTER TABLE monitoring.service_metrics_ts DELETE WHERE period_start < ?";
         clickHouseJdbcTemplate.update(sql2, Timestamp.valueOf(beforeDate));
     }
     

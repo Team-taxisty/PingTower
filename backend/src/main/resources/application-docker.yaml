@@ -22,6 +22,6 @@ spring:
 monitoring:
   clickhouse:
     # Use Docker service hostname, not localhost
-    url: jdbc:clickhouse://clickhouse:8123/monitoring
+    url: jdbc:clickhouse://clickhouse:8123/monitoring?compress=0
     username: default
     password: ""
