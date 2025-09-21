@@ -1,4 +1,5 @@
-const BASE_URL = '';  // Используем текущий домен через nginx proxy
+// В dev-режиме мы обращаемся к nginx на порт 80, в prod - относительные пути
+const BASE_URL = process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : '';
 
 const api = async (url, options = {}) => {
   const token = localStorage.getItem('jwtToken');
