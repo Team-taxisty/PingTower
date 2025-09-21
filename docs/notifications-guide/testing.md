@@ -54,15 +54,15 @@ def test_python_bot():
         response.raise_for_status()
         
         result = response.json()
-        print(f"✅ Python бот: {result}")
+        print(f"Python бот: {result}")
         return True
     except requests.exceptions.RequestException as e:
-        print(f"❌ Python бот: Ошибка - {e}")
+        print(f"Python бот: Ошибка - {e}")
         return False
 
 def test_java_backend():
     """Тестирование через Java бэкенд"""
-    print("🧪 Тестирование Java бэкенда...")
+    print("Тестирование Java бэкенда...")
     
     url = f"{JAVA_BACKEND_URL}/api/v1/notifications/send"
     payload = {
@@ -84,39 +84,39 @@ def test_java_backend():
         response.raise_for_status()
         
         result = response.json()
-        print(f"✅ Java бэкенд: {result}")
+        print(f"Java бэкенд: {result}")
         return True
     except requests.exceptions.RequestException as e:
-        print(f"❌ Java бэкенд: Ошибка - {e}")
+        print(f"Java бэкенд: Ошибка - {e}")
         return False
 
 def test_health_checks():
     """Проверка здоровья компонентов"""
-    print("🏥 Проверка здоровья компонентов...")
+    print("Проверка здоровья компонентов...")
     
     # Python бот
     try:
         response = requests.get(f"{PYTHON_BOT_URL}/health", timeout=5)
         if response.status_code == 200:
-            print("✅ Python бот: Здоров")
+            print("Python бот: Здоров")
         else:
-            print(f"⚠️ Python бот: Статус {response.status_code}")
+            print(f"Python бот: Статус {response.status_code}")
     except requests.exceptions.RequestException as e:
-        print(f"❌ Python бот: Недоступен - {e}")
+        print(f"Python бот: Недоступен - {e}")
     
     # Java бэкенд
     try:
         response = requests.get(f"{JAVA_BACKEND_URL}/actuator/health", timeout=5)
         if response.status_code == 200:
-            print("✅ Java бэкенд: Здоров")
+            print("Java бэкенд: Здоров")
         else:
-            print(f"⚠️ Java бэкенд: Статус {response.status_code}")
+            print(f"Java бэкенд: Статус {response.status_code}")
     except requests.exceptions.RequestException as e:
-        print(f"❌ Java бэкенд: Недоступен - {e}")
+        print(f"Java бэкенд: Недоступен - {e}")
 
 def test_user_registration():
     """Тестирование регистрации пользователя"""
-    print("👤 Тестирование регистрации пользователя...")
+    print("Тестирование регистрации пользователя...")
     
     url = f"{PYTHON_BOT_URL}/register"
     payload = {
@@ -127,17 +127,17 @@ def test_user_registration():
     try:
         response = requests.post(url, json=payload, timeout=10)
         if response.status_code == 200:
-            print("✅ Пользователь зарегистрирован")
+            print("Пользователь зарегистрирован")
         elif response.status_code == 409:
-            print("ℹ️ Пользователь уже существует")
+            print("ℹПользователь уже существует")
         else:
-            print(f"⚠️ Статус регистрации: {response.status_code}")
+            print(f"Статус регистрации: {response.status_code}")
     except requests.exceptions.RequestException as e:
-        print(f"❌ Ошибка регистрации: {e}")
+        print(f"Ошибка регистрации: {e}")
 
 def main():
     """Основная функция тестирования"""
-    print("🚀 Запуск тестирования системы уведомлений PingTower")
+    print("Запуск тестирования системы уведомлений PingTower")
     print("=" * 50)
     
     # Проверка здоровья
@@ -165,10 +165,10 @@ def main():
         print()
         test_java_backend()
     else:
-        print("❌ Неверный выбор")
+        print("Неверный выбор")
         sys.exit(1)
     
-    print("\n🎉 Тестирование завершено!")
+    print("\nТестирование завершено!")
 
 if __name__ == "__main__":
     main()
@@ -433,7 +433,7 @@ async def send_notification_async(session, username, service_name, message):
 
 async def load_test(num_requests=100, concurrent_users=10):
     """Нагрузочный тест"""
-    print(f"🚀 Запуск нагрузочного теста: {num_requests} запросов, {concurrent_users} пользователей")
+    print(f"Запуск нагрузочного теста: {num_requests} запросов, {concurrent_users} пользователей")
     
     start_time = time.time()
     
@@ -456,7 +456,7 @@ async def load_test(num_requests=100, concurrent_users=10):
     successful = sum(1 for r in results if isinstance(r, dict) and r.get("success"))
     failed = len(results) - successful
     
-    print(f"📊 Результаты нагрузочного теста:")
+    print(f" Результаты нагрузочного теста:")
     print(f"   Всего запросов: {len(results)}")
     print(f"   Успешных: {successful}")
     print(f"   Неудачных: {failed}")
@@ -504,7 +504,7 @@ def test_notification_channels():
     ]
     
     for channel in channels:
-        print(f"🧪 Тестирование канала: {channel['name']}")
+        print(f" Тестирование канала: {channel['name']}")
         
         # Создание канала
         response = requests.post(
@@ -515,7 +515,7 @@ def test_notification_channels():
         
         if response.status_code == 201:
             channel_id = response.json()["id"]
-            print(f"✅ Канал создан с ID: {channel_id}")
+            print(f" Канал создан с ID: {channel_id}")
             
             # Тестирование канала
             test_response = requests.post(
@@ -524,11 +524,11 @@ def test_notification_channels():
             )
             
             if test_response.status_code == 200:
-                print(f"✅ Тест канала успешен")
+                print(f" Тест канала успешен")
             else:
-                print(f"❌ Тест канала неудачен: {test_response.text}")
+                print(f" Тест канала неудачен: {test_response.text}")
         else:
-            print(f"❌ Ошибка создания канала: {response.text}")
+            print(f" Ошибка создания канала: {response.text}")
 
 if __name__ == "__main__":
     test_notification_channels()
@@ -563,9 +563,9 @@ def log_test_result(test_name, success, details=None):
     }
     
     if success:
-        logging.info(f"✅ {test_name}: PASSED")
+        logging.info(f" {test_name}: PASSED")
     else:
-        logging.error(f"❌ {test_name}: FAILED - {details}")
+        logging.error(f" {test_name}: FAILED - {details}")
     
     # Сохранение в JSON файл
     with open('test_results.json', 'a') as f:
