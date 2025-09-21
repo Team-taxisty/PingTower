@@ -5,72 +5,81 @@ import api from '../utils/api';
 function CheckDetail({ check, onEdit, onDelete, onBack }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [runsData, setRunsData] = useState([]);
-  const [isLoadingRuns, setIsLoadingRuns] = useState(true);
+  const [metricsData, setMetricsData] = useState(null); // Новое состояние для метрик
+  const [isLoadingData, setIsLoadingData] = useState(true); // Объединенное состояние загрузки
 
   useEffect(() => {
     if (check?.id) {
-      const fetchRuns = async () => {
-        setIsLoadingRuns(true);
+      const fetchData = async () => {
+        setIsLoadingData(true);
         try {
           const now = new Date();
-          const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-          // Используем check.id как serviceId для запроса runs
-          const response = await api(`/v1/api/runs?check_id=${check.id}&from=${twentyFourHoursAgo.toISOString()}&to=${now.toISOString()}`);
-          if (response.ok) {
-            const data = await response.json();
-            setRunsData(data.items || []);
+          const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Для метрик за 30 дней
+
+          // Fetch runs data
+          const resultsResponse = await api(`/api/v1/monitoring/services/${check.id}/results?since=${thirtyDaysAgo.toISOString()}&size=1000`);
+          if (resultsResponse.ok) {
+            const resultsData = await resultsResponse.json();
+            setRunsData(resultsData.content || []);
           } else {
-            console.error('Failed to fetch runs', response.status);
+            console.error('Failed to fetch service results', resultsResponse.status);
             setRunsData([]);
           }
+
+          // Fetch metrics data
+          const metricsResponse = await api(`/api/v1/monitoring/services/${check.id}/metrics?since=${thirtyDaysAgo.toISOString()}`);
+          if (metricsResponse.ok) {
+            const metrics = await metricsResponse.json();
+            setMetricsData(metrics);
+          } else {
+            console.error('Failed to fetch service metrics', metricsResponse.status);
+            setMetricsData(null);
+          }
+
         } catch (error) {
-          console.error('Error fetching runs:', error);
+          console.error('Error fetching service data:', error);
           setRunsData([]);
+          setMetricsData(null);
         } finally {
-          setIsLoadingRuns(false);
+          setIsLoadingData(false);
         }
       };
-      fetchRuns();
+      fetchData();
     }
   }, [check?.id]);
 
   const processedRunsData = useMemo(() => {
     return runsData.map(run => ({
-      time: new Date(run.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      responseTime: run.latency_ms,
-
-      uptime: run.status === 'UP' ? 100 : 0,
+      time: new Date(run.checkTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      responseTime: run.responseTimeMs,
+      uptime: run.successful ? 100 : 0,
     }));
   }, [runsData]);
 
   const averageResponseTime = useMemo(() => {
-    if (runsData.length === 0) return 0;
-    const totalResponseTime = runsData.reduce((sum, run) => sum + run.latency_ms, 0);
-    return (totalResponseTime / runsData.length).toFixed(2);
-  }, [runsData]);
+    return metricsData?.averageResponseTimeMs?.toFixed(2) || 0;
+  }, [metricsData]);
 
   const uptimePercentage = useMemo(() => {
-    if (runsData.length === 0) return 'N/A';
-    const upRuns = runsData.filter(run => run.status === 'UP').length;
-    return ((upRuns / runsData.length) * 100).toFixed(2);
-  }, [runsData]);
+    return metricsData?.uptimePercentage?.toFixed(2) || 'N/A';
+  }, [metricsData]);
 
   const incidents = useMemo(() => {
     const detectedIncidents = [];
     for (let i = 1; i < runsData.length; i++) {
-      if (runsData[i].status !== 'UP' && runsData[i - 1].status === 'UP') {
+      if (!runsData[i].successful && runsData[i - 1].successful) {
         detectedIncidents.push({
           id: runsData[i].id,
-          startTime: new Date(runsData[i].started_at).toLocaleString(),
+          startTime: new Date(runsData[i].checkTime).toLocaleString(),
           status: 'DOWN', // Консолидировано для отображения UP/DOWN
-          description: `Service went from UP to ${runsData[i].status}`,
+          description: `Service went from UP to DOWN (Response Code: ${runsData[i].responseCode})`,
         });
       }
     }
     return detectedIncidents;
   }, [runsData]);
 
-  const incidentCount = incidents.length; // Вычисляем incidentCount на основе массива incidents
+  const incidentCount = incidents.length;
 
   const containerStyle = { maxWidth: 1200, margin: '0 auto', padding: 24, color: '#1a1a1a' };
   const headerStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 };
@@ -102,21 +111,16 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) {
     return null;
   };
 
-  if (isLoadingRuns) {
-
+  if (isLoadingData) {
     return <div style={containerStyle}>Загрузка данных сервиса...</div>;
   }
-
-  const currentStatus = check.status === 'UP' ? 'UP' : 'DOWN';
 
   return (
     <div style={containerStyle}>
       <div style={headerStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <button style={backBtn} onClick={onBack}>← Назад</button>
-
           <h1 style={titleStyle}>Детали сервиса: {check.name}</h1>
-
         </div>
         <div style={actionsStyle}>
           <button style={editBtn} onClick={() => onEdit(check)}>Редактировать</button>

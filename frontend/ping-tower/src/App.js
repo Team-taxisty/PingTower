@@ -15,29 +15,56 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('jwtToken'));
   const [currentPage, setCurrentPage] = useState(isLoggedIn ? 'dashboard' : 'auth');
   const [services, setServices] = useState([]);
-  const [selectedService, setSelectedService] = useState(null); // Renamed from selectedCheck
+  const [selectedService, setSelectedService] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchServices = useCallback(async () => {
+  const fetchServicesAndStatuses = useCallback(async () => {
     if (!isLoggedIn) return;
 
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api('/v1/api/services'); // Updated endpoint
-      if (response.ok) {
-        const data = await response.json();
-        setServices(data.items || []); // Assuming data.items contains the services array
+      const [servicesResponse, dashboardResponse] = await Promise.all([
+        api('/v1/api/services'), // Получаем список всех сервисов
+        api('/api/v1/monitoring/dashboard') // Получаем статусы для дашборда
+      ]);
+
+      let fetchedServices = [];
+      if (servicesResponse.ok) {
+        const servicesData = await servicesResponse.json();
+        fetchedServices = servicesData.content || [];
       } else {
-        console.error('Failed to fetch services:', response.status);
+        console.error('Failed to fetch services:', servicesResponse.status);
         setError('Не удалось загрузить сервисы.');
       }
+
+      if (dashboardResponse.ok) {
+        const dashboardData = await dashboardResponse.json();
+        const servicesWithStatus = fetchedServices.map(service => {
+          const dashboardService = dashboardData.find(ds => ds.serviceId === service.id);
+          return {
+            ...service,
+            status: dashboardService ? dashboardService.status : 'UNKNOWN', // Добавляем статус
+            // Возможно, также добавить responseCode, responseTimeMs, lastChecked
+            responseCode: dashboardService ? dashboardService.responseCode : null,
+            responseTimeMs: dashboardService ? dashboardService.responseTimeMs : null,
+            lastChecked: dashboardService ? dashboardService.lastChecked : null,
+          };
+        });
+        setServices(servicesWithStatus);
+      } else {
+        const errorText = await dashboardResponse.text();
+        console.error('Failed to fetch dashboard data:', dashboardResponse.status, errorText);
+        // Если дашборд не загрузился, отображаем сервисы без статуса или с UNKNOWN
+        setServices(fetchedServices.map(service => ({ ...service, status: 'UNKNOWN' })));
+        // Удаляем setError для статусов сервисов
+      }
+
     } catch (err) {
-      console.error('Error fetching services:', err);
-      setError('Произошла ошибка при загрузке сервисов.');
+      console.error('Error fetching services and statuses:', err);
     } finally {
       setIsLoading(false);
     }
@@ -45,10 +72,9 @@ function App() {
 
   useEffect(() => {
     if (isLoggedIn) {
-      fetchServices();
+      fetchServicesAndStatuses();
     }
-  }, [isLoggedIn, fetchServices]);
-
+  }, [isLoggedIn, fetchServicesAndStatuses]);
 
   const handleAuthSuccess = () => {
     setIsLoggedIn(true);
@@ -63,39 +89,46 @@ function App() {
     setSelectedService(null);
   };
 
-  const handleAddService = async (newServiceData) => { // Renamed from handleAddCheck
+  const handleAddService = async (newServiceData) => {
+    // Временное оповещение для отладки
+    alert('Attempting to add service: ' + JSON.stringify(newServiceData, null, 2));
     try {
-      const response = await api('/v1/api/services', { // Updated endpoint
+      const response = await api('/v1/api/services', {
         method: 'POST',
-        body: JSON.stringify({ ...newServiceData, enabled: true }), // Add enabled: true by default
+        body: JSON.stringify({ ...newServiceData, enabled: true }),
       });
       if (response.ok) {
-        fetchServices();
+        fetchServicesAndStatuses(); // Обновляем оба списка после добавления
         setIsAddModalOpen(false);
+        alert('Service added successfully!');
       } else {
         const errorData = await response.json();
         console.error('Failed to add service:', errorData);
-        setError(errorData.message || 'Ошибка при добавлении сервиса.');
+        const errorMessage = errorData.message || 'Ошибка при добавлении сервиса.';
+        setError(errorMessage);
+        alert('Failed to add service: ' + errorMessage);
       }
     } catch (err) {
       console.error('Error adding service:', err);
-      setError('Произошла ошибка при добавлении сервиса.');
+      const errorMessage = 'Произошла ошибка при добавлении сервиса: ' + err.message;
+      setError(errorMessage);
+      alert('Error adding service: ' + errorMessage);
     }
   };
 
-  const handleEditService = (service) => { // Renamed from handleEditCheck
+  const handleEditService = (service) => {
     setSelectedService(service);
     setIsEditModalOpen(true);
   };
 
-  const handleUpdateService = async (updatedServiceData) => { // Renamed from handleUpdateCheck
+  const handleUpdateService = async (updatedServiceData) => {
     try {
-      const response = await api(`/v1/api/services/${updatedServiceData.id}`, { // Updated endpoint
+      const response = await api(`/v1/api/services/${updatedServiceData.id}`, {
         method: 'PUT',
         body: JSON.stringify(updatedServiceData),
       });
       if (response.ok) {
-        fetchServices();
+        fetchServicesAndStatuses(); // Обновляем оба списка после обновления
         setIsEditModalOpen(false);
         setSelectedService(null);
       } else {
@@ -109,14 +142,14 @@ function App() {
     }
   };
 
-  const handleDeleteService = async (serviceId) => { // Renamed from handleDeleteCheck
+  const handleDeleteService = async (serviceId) => {
     if (window.confirm('Вы уверены, что хотите удалить этот сервис?')) {
       try {
-        const response = await api(`/v1/api/services/${serviceId}`, { // Updated endpoint
+        const response = await api(`/v1/api/services/${serviceId}`, {
           method: 'DELETE',
         });
         if (response.ok) {
-          fetchServices();
+          fetchServicesAndStatuses(); // Обновляем оба списка после удаления
           setSelectedService(null);
           setCurrentPage('dashboard');
         } else {
@@ -131,7 +164,7 @@ function App() {
     }
   };
 
-  const handleServiceClick = (service) => { // Renamed from handleCheckClick
+  const handleServiceClick = (service) => {
     setSelectedService(service);
     setCurrentPage('serviceDetail');
   };
@@ -149,7 +182,6 @@ function App() {
           Добавить новый сервис
         </button>
       </div>
-      {error && <div style={{ color: 'red', marginBottom: 16 }}>{error}</div>}
       {isLoading ? (
         <div>Загрузка сервисов...</div>
       ) : (
@@ -173,14 +205,14 @@ function App() {
                 ok: services.filter(s => s.status === 'UP').length,
                 down: services.filter(s =>
                   s.status === 'DOWN' ||
-                  s.status === 'DEGRADED' || // Still consolidate degraded, unknown, error as DOWN for pie chart
+                  s.status === 'DEGRADED' ||
                   s.status === 'UNKNOWN' ||
                   s.status === 'ERROR'
                 ).length,
               }} />
             </div>
           </div>
-          <CheckList services={services} onServiceClick={handleServiceClick} /> {/* Renamed prop */}
+          <CheckList services={services} onServiceClick={handleServiceClick} />
         </>
       )}
     </div>
@@ -203,12 +235,12 @@ function App() {
       case 'settings':
         content = <Settings />;
         break;
-      case 'serviceDetail': // Renamed from checkDetail
+      case 'serviceDetail':
         content = (
           <CheckDetail
-            check={selectedService} // Renamed prop
-            onEdit={handleEditService} // Renamed
-            onDelete={handleDeleteService} // Renamed
+            check={selectedService}
+            onEdit={handleEditService}
+            onDelete={handleDeleteService}
             onBack={() => {
               setSelectedService(null);
               setCurrentPage('dashboard');
@@ -225,20 +257,20 @@ function App() {
     <div style={{ fontFamily: 'Inter, sans-serif', background: '#f8f9fa', minHeight: '100vh' }}>
       {isLoggedIn && <Navigation currentPage={currentPage} onNavigate={setCurrentPage} onLogout={handleLogout} />}
       {content}
-      <AddCheckModal // Functionally AddServiceModal
+      <AddCheckModal
         open={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onSubmit={handleAddService} // Renamed
+        onSubmit={handleAddService}
       />
       {selectedService && (
-        <EditCheckModal // Functionally EditServiceModal
+        <EditCheckModal
           open={isEditModalOpen}
           onClose={() => {
             setIsEditModalOpen(false);
             setSelectedService(null);
           }}
-          check={selectedService} // Renamed prop
-          onSubmit={handleUpdateService} // Renamed
+          check={selectedService}
+          onSubmit={handleUpdateService}
         />
       )}
     </div>

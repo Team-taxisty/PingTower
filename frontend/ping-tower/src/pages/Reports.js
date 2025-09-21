@@ -4,25 +4,26 @@ import api from '../utils/api';
 
 function Reports() {
   const [period, setPeriod] = useState('week');
-  const [services, setServices] = useState([]); // Renamed from checks
-  const [selectedServiceId, setSelectedServiceId] = useState(''); // Renamed from selectedCheckId
-  const [reportData, setReportData] = useState([]);
-  const [isLoadingServices, setIsLoadingServices] = useState(true); // Renamed from isLoadingChecks
+  const [services, setServices] = useState([]);
+  const [selectedServiceId, setSelectedServiceId] = useState('');
+  const [reportData, setReportData] = useState([]); // Stores results from /api/v1/monitoring/services/{serviceId}/results
+  const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
 
   useEffect(() => {
-    const fetchServices = async () => { // Renamed from fetchChecks
+    const fetchServices = async () => {
       setIsLoadingServices(true);
       try {
-        const response = await api('/v1/api/services'); // Updated endpoint
+        const response = await api('/v1/api/services');
         if (response.ok) {
           const data = await response.json();
-          setServices(data.items || []);
-          if (data.items.length > 0) {
-            setSelectedServiceId(data.items[0].id); // Select first service by default
+          setServices(data.content || []);
+          if (data.content.length > 0) {
+            setSelectedServiceId(data.content[0].id);
           }
         } else {
-          console.error('Failed to fetch services', response.status);
+          const errorText = await response.text();
+          console.error('Failed to fetch services:', response.status, errorText);
         }
       } catch (error) {
         console.error('Error fetching services:', error);
@@ -52,12 +53,13 @@ function Reports() {
         fromDate.setMonth(now.getMonth() - 1);
       }
 
-      const response = await api(`/v1/api/runs?service_id=${selectedServiceId}&from=${fromDate.toISOString()}&to=${now.toISOString()}`); // Updated parameter
+      const response = await api(`/api/v1/monitoring/services/${selectedServiceId}/results?since=${fromDate.toISOString()}&size=1000`); // Updated endpoint and parameters
       if (response.ok) {
         const data = await response.json();
-        setReportData(data.items || []);
+        setReportData(data.content || []); // Updated to data.content
       } else {
-        console.error('Failed to fetch report data', response.status);
+        const errorText = await response.text();
+        console.error('Failed to fetch report data', response.status, errorText);
         setReportData([]);
       }
     } catch (error) {
@@ -70,22 +72,22 @@ function Reports() {
 
   const averageResponseTime = useMemo(() => {
     if (reportData.length === 0) return 0;
-    const totalResponseTime = reportData.reduce((sum, run) => sum + run.latency_ms, 0);
+    const totalResponseTime = reportData.reduce((sum, run) => sum + (run.responseTimeMs || 0), 0); // Updated field name
     return (totalResponseTime / reportData.length).toFixed(2);
   }, [reportData]);
 
   const uptimePercentage = useMemo(() => {
     if (reportData.length === 0) return 'N/A';
-    const upRuns = reportData.filter(run => run.status === 'UP').length;
+    const upRuns = reportData.filter(run => run.successful).length; // Updated field name
     return ((upRuns / reportData.length) * 100).toFixed(2);
   }, [reportData]);
 
   const incidentCount = useMemo(() => {
     let count = 0;
     for (let i = 1; i < reportData.length; i++) {
-      const currentStatus = reportData[i].status;
-      const previousStatus = reportData[i - 1].status;
-      if (currentStatus !== 'UP' && previousStatus === 'UP') {
+      const currentStatus = reportData[i].successful;
+      const previousStatus = reportData[i - 1].successful;
+      if (!currentStatus && previousStatus) { // Incident is when it goes from successful to not successful
         count++;
       }
     }
@@ -112,12 +114,12 @@ function Reports() {
 
   const processedChartData = useMemo(() => {
     return reportData.map(run => ({
-      time: new Date(run.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      responseTime: run.latency_ms,
+      time: new Date(run.checkTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), // Updated field name
+      responseTime: run.responseTimeMs,
     }));
   }, [reportData]);
 
-  const selectedServiceName = useMemo(() => { // Renamed from selectedCheckName
+  const selectedServiceName = useMemo(() => {
     const service = services.find(s => s.id === selectedServiceId);
     return service ? service.name : 'Не выбрано';
   }, [services, selectedServiceId]);
@@ -189,27 +191,31 @@ function Reports() {
               <table style={tableStyle}>
                 <thead>
                   <tr>
-                    <th style={thStyle}>Время запуска</th>
+                    <th style={thStyle}>Время проверки</th>
                     <th style={thStyle}>Время отклика (ms)</th>
                     <th style={thStyle}>Статус</th>
+                    <th style={thStyle}>Код ответа</th>
+                    <th style={thStyle}>Сообщение об ошибке</th>
                   </tr>
                 </thead>
                 <tbody>
                   {reportData.map(run => (
                     <tr key={run.id}>
-                      <td style={tdStyle}>{new Date(run.started_at).toLocaleString()}</td>
-                      <td style={tdStyle}>{run.latency_ms}</td>
+                      <td style={tdStyle}>{new Date(run.checkTime).toLocaleString()}</td>
+                      <td style={tdStyle}>{run.responseTimeMs}</td>
                       <td style={tdStyle}>
                         <span style={{
                           padding: '2px 8px',
                           borderRadius: 12,
-                          background: run.status === 'UP' ? '#10b981' : '#ef4444',
+                          background: run.successful ? '#10b981' : '#ef4444',
                           color: '#fff',
                           fontSize: 12
                         }}>
-                          {run.status === 'UP' ? 'UP' : 'DOWN'}
+                          {run.successful ? 'Успешно' : 'Ошибка'}
                         </span>
                       </td>
+                      <td style={tdStyle}>{run.responseCode || '-'}</td>
+                      <td style={tdStyle}>{run.errorMessage || '-'}</td>
                     </tr>
                   ))}
                 </tbody>

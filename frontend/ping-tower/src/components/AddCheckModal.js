@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 
-
 function AddCheckModal({ open, onClose, onSubmit }) {
   const [isCancelButtonHovered, setIsCancelButtonHovered] = useState(false);
   const [isAddButtonHovered, setIsAddButtonHovered] = useState(false);
@@ -14,7 +13,6 @@ function AddCheckModal({ open, onClose, onSubmit }) {
 
     const basePayload = {
       name: String(formData.get('name') || '').trim(),
-
       description: String(formData.get('description') || '').trim(),
       url: String(formData.get('url') || '').trim(),
       serviceType: serviceType,
@@ -50,11 +48,11 @@ function AddCheckModal({ open, onClose, onSubmit }) {
   const label = { fontSize: 12, color: '#6D0475', fontWeight: 600 };
   const input = {
     width: '100%', borderRadius: '8px', border: '1px solid #E5B8E8', padding: '10px 12px',
-    fontSize: '14px', color: '#1a1a1a', background: '#ffffff', boxSizing: 'border-box'
+    fontSize: '14px', color: '#1a1a1a', background: '#ffffff', boxSizing: 'border-box', marginBottom: '12px'
   };
   const selectStyle = {
     width: '100%', borderRadius: '8px', border: '1px solid #E5B8E8', padding: '10px 12px',
-    fontSize: '14px', color: '#1a1a1a', background: '#ffffff', boxSizing: 'border-box'
+    fontSize: '14px', color: '#1a1a1a', background: '#ffffff', boxSizing: 'border-box', marginBottom: '12px'
   };
   const actions = { display: 'flex', gap: '12px', justifyContent: 'flex-end' };
   const btn = {
@@ -65,7 +63,6 @@ function AddCheckModal({ open, onClose, onSubmit }) {
   return (
     <div style={overlay} onClick={onClose}>
       <div style={modal} onClick={(e) => e.stopPropagation()}>
-
         <div style={{ fontWeight: 600, fontSize: 16, color: '#6D0475' }}>Новый сервис мониторинга</div>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ flexDirection: 'column', gap: 6, display: 'flex' }}>
