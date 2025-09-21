@@ -82,7 +82,7 @@ function EditCheckModal({ check, open, onClose, onSubmit }) {
   return (
     <div style={overlay} onClick={onClose}>
       <div style={modal} onClick={(e) => e.stopPropagation()}>
-        <div style={{ fontWeight: 600, fontSize: 16, color: '#6D0475' }}>Редактировать сервис</div> {/* Обновлено название */}
+        <div style={{ fontWeight: 600, fontSize: 16, color: '#6D0475' }}>Редактировать сервис</div>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div>
             <label style={label} htmlFor="name">Название</label>
