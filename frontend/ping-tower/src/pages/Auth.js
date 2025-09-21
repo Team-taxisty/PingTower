@@ -50,7 +50,7 @@ function Auth({ onAuthSuccess }) {
     if (validateForm()) {
       setIsLoading(true);
       try {
-        const url = isLogin ? '/v1/api/auth/login' : '/v1/api/auth/register';
+        const url = isLogin ? '/api/auth/login' : '/api/auth/register';
         const body = isLogin ? { username: email, password } : { username: name, email, password };
 
         const response = await api(url, {
