@@ -19,6 +19,9 @@ function AddCheckModal({ open, onClose, onSubmit }) {
       enabled: true, // Всегда true при создании
       checkIntervalMinutes: parseInt(formData.get('checkIntervalMinutes') || '5', 10),
       timeoutSeconds: parseInt(formData.get('timeoutSeconds') || '30', 10),
+      // Add required fields for the API
+      httpMethod: 'GET',
+      expectedStatusCode: 200,
     };
 
     let specificPayload = {};
