@@ -17,20 +17,34 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) {
           const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Для метрик за 30 дней
 
           // Fetch runs data
-          const resultsResponse = await api(`/api/v1/monitoring/services/${check.id}/results?since=${thirtyDaysAgo.toISOString()}&size=1000`);
+          const resultsResponse = await api(`/v1/api/monitoring/services/${check.id}/results?since=${thirtyDaysAgo.toISOString()}&size=1000`);
           if (resultsResponse.ok) {
-            const resultsData = await resultsResponse.json();
-            setRunsData(resultsData.content || []);
+            try {
+              const resultsData = await resultsResponse.json();
+              setRunsData(resultsData.content || []);
+            } catch (jsonError) {
+              console.error('Failed to parse results JSON:', jsonError);
+              const responseText = await resultsResponse.text();
+              console.error('Results response was:', responseText.substring(0, 200));
+              setRunsData([]);
+            }
           } else {
             console.error('Failed to fetch service results', resultsResponse.status);
             setRunsData([]);
           }
 
           // Fetch metrics data
-          const metricsResponse = await api(`/api/v1/monitoring/services/${check.id}/metrics?since=${thirtyDaysAgo.toISOString()}`);
+          const metricsResponse = await api(`/v1/api/monitoring/services/${check.id}/metrics?since=${thirtyDaysAgo.toISOString()}`);
           if (metricsResponse.ok) {
-            const metrics = await metricsResponse.json();
-            setMetricsData(metrics);
+            try {
+              const metrics = await metricsResponse.json();
+              setMetricsData(metrics);
+            } catch (jsonError) {
+              console.error('Failed to parse metrics JSON:', jsonError);
+              const responseText = await metricsResponse.text();
+              console.error('Metrics response was:', responseText.substring(0, 200));
+              setMetricsData(null);
+            }
           } else {
             console.error('Failed to fetch service metrics', metricsResponse.status);
             setMetricsData(null);
