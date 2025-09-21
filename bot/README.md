@@ -6,7 +6,7 @@
 
 ## Быстрый старт
 
-### 1. Запуск системы
+### Запуск системы
 
 ```bash
 # Python Bot
@@ -31,13 +31,6 @@ curl -X POST http://localhost:5000/send_notification \
     "message": "Test notification"
   }'
 ```
-
-### 3. Регистрация в Telegram боте
-
-1. Найдите бота: `@PingTower_tax_bot`
-2. Отправьте `/start`
-3. Зарегистрируйтесь с логином и паролем
-
 ### Локальная разработка
 ```bash
 # Python Bot
