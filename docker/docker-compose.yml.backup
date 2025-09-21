@@ -25,13 +25,8 @@ services:
     image: clickhouse/clickhouse-server:latest
     container_name: pingtower-clickhouse
     ports: ["8123:8123"]
-    environment:
-      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
-      CLICKHOUSE_USER: default
-      CLICKHOUSE_PASSWORD: ""
     volumes:
       - clickhouse_data:/var/lib/clickhouse
-      - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
       interval: 10s

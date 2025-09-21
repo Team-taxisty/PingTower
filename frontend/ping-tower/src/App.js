@@ -1,243 +1,280 @@
-import { useMemo, useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Navigation from './components/Navigation';
-import Filters from './components/Filters';
-import CheckList from './components/CheckList'; // Updated import
-import AddCheckModal from './components/AddCheckModal'; // Updated import
-import EditCheckModal from './components/EditCheckModal'; // Updated import
-import AvailabilityLineChart from './components/charts/AvailabilityLineChart';
+import CheckList from './components/CheckList'; // Functionally ServiceList
+import AddCheckModal from './components/AddCheckModal'; // Functionally AddServiceModal
+import EditCheckModal from './components/EditCheckModal'; // Functionally EditServiceModal
+import CheckDetail from './pages/CheckDetail'; // Functionally ServiceDetail
 import StatusPieChart from './components/charts/StatusPieChart';
-import CheckDetail from './pages/CheckDetail'; // Corrected import from ServiceDetail
-import Alerts from './pages/Alerts';
-import Reports from './pages/Reports';
-import Settings from './pages/Settings';
 import Auth from './pages/Auth';
+import Reports from './pages/Reports';
+import Alerts from './pages/Alerts';
+import Settings from './pages/Settings';
 import api from './utils/api';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('jwtToken') ? true : false);
-  const [currentPage, setCurrentPage] = useState('dashboard');
-  const [selectedCheck, setSelectedCheck] = useState(null);
-  const [checks, setChecks] = useState([]); // Renamed from services
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('jwtToken'));
+  const [currentPage, setCurrentPage] = useState(isLoggedIn ? 'dashboard' : 'auth');
+  const [services, setServices] = useState([]);
+  const [selectedService, setSelectedService] = useState(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (isLoggedIn) {
-      const fetchChecks = async () => {
-        try {
-          const response = await api('/v1/api/checks');
-          if (response.ok) {
-            const data = await response.json();
-            setChecks(data.items || []);
-          } else {
-            console.error('Failed to fetch checks', response.status);
-          }
-        } catch (error) {
-          console.error('Error fetching checks:', error);
-        }
-      };
-      fetchChecks();
+  const fetchServicesAndStatuses = useCallback(async () => {
+    if (!isLoggedIn) return;
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [servicesResponse, dashboardResponse] = await Promise.all([
+        api('/v1/api/services'), // Получаем список всех сервисов
+        api('/v1/api/monitoring/dashboard') // Получаем статусы для дашборда
+      ]);
+
+      let fetchedServices = [];
+      if (servicesResponse.ok) {
+        const servicesData = await servicesResponse.json();
+        fetchedServices = servicesData.content || [];
+      } else {
+        console.error('Failed to fetch services:', servicesResponse.status);
+        setError('Не удалось загрузить сервисы.');
+      }
+
+      if (dashboardResponse.ok) {
+        const dashboardData = await dashboardResponse.json();
+        const servicesWithStatus = fetchedServices.map(service => {
+          const dashboardService = dashboardData.find(ds => ds.serviceId === service.id);
+          return {
+            ...service,
+            status: dashboardService ? dashboardService.status : 'UNKNOWN', // Добавляем статус
+            // Возможно, также добавить responseCode, responseTimeMs, lastChecked
+            responseCode: dashboardService ? dashboardService.responseCode : null,
+            responseTimeMs: dashboardService ? dashboardService.responseTimeMs : null,
+            lastChecked: dashboardService ? dashboardService.lastChecked : null,
+          };
+        });
+        setServices(servicesWithStatus);
+      } else {
+        const errorText = await dashboardResponse.text();
+        console.error('Failed to fetch dashboard data:', dashboardResponse.status, errorText);
+        // Если дашборд не загрузился, отображаем сервисы без статуса или с UNKNOWN
+        setServices(fetchedServices.map(service => ({ ...service, status: 'UNKNOWN' })));
+        // Удаляем setError для статусов сервисов
+      }
+
+    } catch (err) {
+      console.error('Error fetching services and statuses:', err);
+    } finally {
+      setIsLoading(false);
     }
   }, [isLoggedIn]);
 
-  const [filter, setFilter] = useState('all');
-  const availabilityPoints = [
-    { t: '00:00', v: 100 }, { t: '02:00', v: 99.8 }, { t: '04:00', v: 99.9 },
-    { t: '06:00', v: 99.7 }, { t: '08:00', v: 99.9 }, { t: '10:00', v: 100 },
-    { t: '12:00', v: 99.6 }, { t: '14:00', v: 99.9 }, { t: '16:00', v: 100 },
-    { t: '18:00', v: 99.8 }, { t: '20:00', v: 99.9 }, { t: '22:00', v: 100 }
-  ];
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingCheck, setEditingCheck] = useState(null); // Renamed from editingService
-
-  const filteredChecks = useMemo(() => {
-    if (filter === 'all') return checks;
-    return checks.filter((s) => s.status === filter);
-  }, [checks, filter]);
-
-  async function handleAddCheck(payload) { // Renamed from handleAddService
-    try {
-      const response = await api('/v1/api/checks', {
-        method: 'POST',
-        headers: { 'Idempotency-Key': `check-${Date.now()}` }, // Required by OpenAPI spec
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        const newCheck = await response.json();
-        setChecks((prev) => [newCheck, ...prev]);
-        setIsModalOpen(false);
-      } else {
-        console.error('Failed to add check', response.status);
-      }
-    } catch (error) {
-      console.error('Error adding check:', error);
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchServicesAndStatuses();
     }
-  }
+  }, [isLoggedIn, fetchServicesAndStatuses]);
 
-  function handleEditCheck(check) { // Renamed from handleEditService
-    setEditingCheck(check);
-    setIsEditModalOpen(true);
-  }
-
-  async function handleUpdateCheck(updatedCheck) { // Renamed from handleUpdateService
-    try {
-      const response = await api(`/v1/api/checks/${updatedCheck.id}`, { // Assuming PUT/PATCH endpoint exists
-        method: 'PUT', // Or PATCH depending on API implementation for update
-        body: JSON.stringify(updatedCheck),
-      });
-
-      if (response.ok) {
-        setChecks((prev) => prev.map(c => c.id === updatedCheck.id ? updatedCheck : c));
-        setIsEditModalOpen(false);
-        setEditingCheck(null);
-      } else {
-        console.error('Failed to update check', response.status);
-      }
-    } catch (error) {
-      console.error('Error updating check:', error);
-    }
-  }
-
-  async function handleDeleteCheck(checkId) { // Renamed from handleDeleteService
-    if (window.confirm('Удалить проверку?')) {
-      try {
-        const response = await api(`/v1/api/checks/${checkId}`, {
-          method: 'DELETE',
-        });
-
-        if (response.ok) {
-          setChecks((prev) => prev.filter(c => c.id !== checkId));
-          if (selectedCheck && selectedCheck.id === checkId) {
-            setSelectedCheck(null);
-            setCurrentPage('dashboard');
-          }
-        } else {
-          console.error('Failed to delete check', response.status);
-        }
-      } catch (error) {
-        console.error('Error deleting check:', error);
-      }
-    }
-  }
-
-  function handleCheckClick(check) { // Renamed from handleServiceClick
-    setSelectedCheck(check);
-    setCurrentPage('service-detail'); // Still service-detail for now, will update later
-  }
-
-  function handleBackToDashboard() {
-    setSelectedCheck(null);
-    setCurrentPage('dashboard');
-  }
-
-  function handleAuthSuccess() {
+  const handleAuthSuccess = () => {
     setIsLoggedIn(true);
     setCurrentPage('dashboard');
-  }
-
-  function handleLogout() {
-    localStorage.removeItem('jwtToken');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('username');
-    localStorage.removeItem('email');
-    setIsLoggedIn(false);
-    setCurrentPage('dashboard'); // Redirect to dashboard or auth page after logout
-  }
-
-  const pageStyle = { maxWidth: 1120, margin: '0 auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 20, color: '#1a1a1a' };
-  const headerStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
-  const titleStyle = { margin: 0, fontSize: 24, fontWeight: 700, color: '#6D0475' };
-  const addBtn = {
-    padding: '10px 14px',
-    borderRadius: 10,
-    border: '1px solid #6D0475',
-    cursor: 'pointer',
-    background: '#6D0475', // Darker purple on hover
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: 500,
-    fontFamily: 'Inter',
-    transition: 'all 0.2s ease',
   };
 
-  function renderPage() {
+  const handleLogout = () => {
+    localStorage.clear();
+    setIsLoggedIn(false);
+    setCurrentPage('auth');
+    setServices([]);
+    setSelectedService(null);
+  };
+
+  const handleAddService = async (newServiceData) => {
+    // Временное оповещение для отладки
+    alert('Attempting to add service: ' + JSON.stringify(newServiceData, null, 2));
+    try {
+      const response = await api('/v1/api/services', {
+        method: 'POST',
+        body: JSON.stringify({ ...newServiceData, enabled: true }),
+      });
+      if (response.ok) {
+        fetchServicesAndStatuses(); // Обновляем оба списка после добавления
+        setIsAddModalOpen(false);
+        alert('Service added successfully!');
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to add service:', errorData);
+        const errorMessage = errorData.message || 'Ошибка при добавлении сервиса.';
+        setError(errorMessage);
+        alert('Failed to add service: ' + errorMessage);
+      }
+    } catch (err) {
+      console.error('Error adding service:', err);
+      const errorMessage = 'Произошла ошибка при добавлении сервиса: ' + err.message;
+      setError(errorMessage);
+      alert('Error adding service: ' + errorMessage);
+    }
+  };
+
+  const handleEditService = (service) => {
+    setSelectedService(service);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateService = async (updatedServiceData) => {
+    try {
+      const response = await api(`/v1/api/services/${updatedServiceData.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updatedServiceData),
+      });
+      if (response.ok) {
+        fetchServicesAndStatuses(); // Обновляем оба списка после обновления
+        setIsEditModalOpen(false);
+        setSelectedService(null);
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to update service:', errorData);
+        setError(errorData.message || 'Ошибка при обновлении сервиса.');
+      }
+    } catch (err) {
+      console.error('Error updating service:', err);
+      setError('Произошла ошибка при обновлении сервиса.');
+    }
+  };
+
+  const handleDeleteService = async (serviceId) => {
+    if (window.confirm('Вы уверены, что хотите удалить этот сервис?')) {
+      try {
+        const response = await api(`/v1/api/services/${serviceId}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          fetchServicesAndStatuses(); // Обновляем оба списка после удаления
+          setSelectedService(null);
+          setCurrentPage('dashboard');
+        } else {
+          const errorData = await response.json();
+          console.error('Failed to delete service:', errorData);
+          setError(errorData.message || 'Ошибка при удалении сервиса.');
+        }
+      } catch (err) {
+        console.error('Error deleting service:', err);
+        setError('Произошла ошибка при удалении сервиса.');
+      }
+    }
+  };
+
+  const handleServiceClick = (service) => {
+    setSelectedService(service);
+    setCurrentPage('serviceDetail');
+  };
+
+  const dashboardContent = (
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: 24, color: '#1a1a1a' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#6D0475' }}>Мои сервисы</h1>
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          style={{
+            padding: '10px 16px', borderRadius: 8, border: '1px solid #6D0475', background: '#6D0475', color: '#ffffff', cursor: 'pointer', fontSize: '14px', fontWeight: 500, transition: 'all 0.2s ease'
+          }}
+        >
+          Добавить новый сервис
+        </button>
+      </div>
+      {error && <div style={{ color: 'red', marginBottom: 16 }}>{error}</div>}
+      {isLoading ? (
+        <div>Загрузка сервисов...</div>
+      ) : (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+            <div style={{ background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' }}>
+              <div style={{ fontSize: 12, color: '#6D0475', fontWeight: 600, marginBottom: 8 }}>Всего сервисов</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{services.length}</div>
+            </div>
+            <div style={{ background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' }}>
+              <div style={{ fontSize: 12, color: '#6D0475', fontWeight: 600, marginBottom: 8 }}>Активные</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#10b981' }}>{services.filter(s => s.enabled).length}</div>
+            </div>
+            <div style={{ background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' }}>
+              <div style={{ fontSize: 12, color: '#6D0475', fontWeight: 600, marginBottom: 8 }}>Неактивные</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#ef4444' }}>{services.filter(s => !s.enabled).length}</div>
+            </div>
+            <div style={{ background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' }}>
+              <div style={{ fontSize: 12, color: '#6D0475', fontWeight: 600, marginBottom: 8 }}>Статус</div>
+              <StatusPieChart data={{
+                ok: services.filter(s => s.status === 'UP').length,
+                down: services.filter(s =>
+                  s.status === 'DOWN' ||
+                  s.status === 'DEGRADED' ||
+                  s.status === 'UNKNOWN' ||
+                  s.status === 'ERROR'
+                ).length,
+              }} />
+            </div>
+          </div>
+          <CheckList services={services} onServiceClick={handleServiceClick} />
+        </>
+      )}
+    </div>
+  );
+
+  let content;
+  if (!isLoggedIn) {
+    content = <Auth onAuthSuccess={handleAuthSuccess} />;
+  } else {
     switch (currentPage) {
       case 'dashboard':
-        return (
-          <>
-            <div style={headerStyle}>
-              <button
-                style={addBtn}
-                onClick={() => setIsModalOpen(true)}
-              >
-                Добавить новую проверку
-              </button>
-            </div>
-
-            <div style={{ background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)', marginBottom: 20, overflow: 'hidden' }}>
-              <div style={{ marginBottom: 16, color: '#6D0475', fontSize: 18, fontWeight: 600 }}>Статусы</div>
-              <div style={{ height: 250, overflow: 'hidden' }}>
-                <StatusPieChart data={{
-                  ok: checks.filter(c => c.status === 'ok').length,
-                  down: checks.filter(c => c.status === 'down').length,
-                }} />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ margin: 0, color: '#6D0475', fontSize: 18, fontWeight: 600 }}>Проверки</h3>
-              <Filters activeFilter={filter} onChange={setFilter} />
-            </div>
-
-            <div style={{ background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 16, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' }}>
-              <CheckList checks={filteredChecks} onCheckClick={handleCheckClick} />
-            </div>
-          </>
-        );
-      case 'service-detail':
-        return selectedCheck ? (
-          <CheckDetail 
-            check={selectedCheck} 
-            onEdit={handleEditCheck}
-            onDelete={handleDeleteCheck}
-            onBack={handleBackToDashboard}
-          />
-        ) : null;
-      case 'alerts':
-        return <Alerts />;
+        content = dashboardContent;
+        break;
       case 'reports':
-        return <Reports />;
+        content = <Reports />;
+        break;
+      case 'alerts':
+        content = <Alerts />;
+        break;
       case 'settings':
-        return <Settings />;
+        content = <Settings />;
+        break;
+      case 'serviceDetail':
+        content = (
+          <CheckDetail
+            check={selectedService}
+            onEdit={handleEditService}
+            onDelete={handleDeleteService}
+            onBack={() => {
+              setSelectedService(null);
+              setCurrentPage('dashboard');
+            }}
+          />
+        );
+        break;
       default:
-        return null;
+        content = dashboardContent;
     }
-  }
-
-  if (!isLoggedIn) {
-    return <Auth onAuthSuccess={handleAuthSuccess} />;
   }
 
   return (
-    <div style={pageStyle}>
-      <Navigation currentPage={currentPage} onNavigate={setCurrentPage} onLogout={handleLogout} isLoggedIn={isLoggedIn} />
-      {renderPage()}
-
+    <div style={{ fontFamily: 'Inter, sans-serif', background: '#f8f9fa', minHeight: '100vh' }}>
+      {isLoggedIn && <Navigation currentPage={currentPage} onNavigate={setCurrentPage} onLogout={handleLogout} />}
+      {content}
+      {error && <div style={{ color: 'red', marginBottom: '16px', padding: '10px', border: '1px solid red', borderRadius: '8px', textAlign: 'center' }}>{error}</div>}
       <AddCheckModal
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleAddCheck}
+        open={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSubmit={handleAddService}
       />
-
-      <EditCheckModal
-        check={editingCheck}
-        open={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setEditingCheck(null);
-        }}
-        onSubmit={handleUpdateCheck}
-      />
+      {selectedService && (
+        <EditCheckModal
+          open={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedService(null);
+          }}
+          check={selectedService}
+          onSubmit={handleUpdateService}
+        />
+      )}
     </div>
   );
 }

@@ -2,74 +2,84 @@ import { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import api from '../utils/api';
 
-function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from ServiceDetail and service prop
+function CheckDetail({ check, onEdit, onDelete, onBack }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [runsData, setRunsData] = useState([]);
-  const [isLoadingRuns, setIsLoadingRuns] = useState(true);
+  const [metricsData, setMetricsData] = useState(null); // Новое состояние для метрик
+  const [isLoadingData, setIsLoadingData] = useState(true); // Объединенное состояние загрузки
 
   useEffect(() => {
     if (check?.id) {
-      const fetchRuns = async () => {
-        setIsLoadingRuns(true);
+      const fetchData = async () => {
+        setIsLoadingData(true);
         try {
           const now = new Date();
-          const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-          const response = await api(`/v1/api/runs?check_id=${check.id}&from=${twentyFourHoursAgo.toISOString()}&to=${now.toISOString()}`);
-          if (response.ok) {
-            const data = await response.json();
-            setRunsData(data.items || []);
+          const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Для метрик за 30 дней
+
+          // Fetch runs data
+          const resultsResponse = await api(`/api/v1/monitoring/services/${check.id}/results?since=${thirtyDaysAgo.toISOString()}&size=1000`);
+          if (resultsResponse.ok) {
+            const resultsData = await resultsResponse.json();
+            setRunsData(resultsData.content || []);
           } else {
-            console.error('Failed to fetch runs', response.status);
+            console.error('Failed to fetch service results', resultsResponse.status);
             setRunsData([]);
           }
+
+          // Fetch metrics data
+          const metricsResponse = await api(`/api/v1/monitoring/services/${check.id}/metrics?since=${thirtyDaysAgo.toISOString()}`);
+          if (metricsResponse.ok) {
+            const metrics = await metricsResponse.json();
+            setMetricsData(metrics);
+          } else {
+            console.error('Failed to fetch service metrics', metricsResponse.status);
+            setMetricsData(null);
+          }
+
         } catch (error) {
-          console.error('Error fetching runs:', error);
+          console.error('Error fetching service data:', error);
           setRunsData([]);
+          setMetricsData(null);
         } finally {
-          setIsLoadingRuns(false);
+          setIsLoadingData(false);
         }
       };
-      fetchRuns();
+      fetchData();
     }
   }, [check?.id]);
 
   const processedRunsData = useMemo(() => {
-    // Process raw run data for charts
     return runsData.map(run => ({
-      time: new Date(run.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      responseTime: run.latency_ms,
-      uptime: run.status === 'UP' ? 100 : (run.status === 'DEGRADED' ? 50 : 0), // Map status to uptime % for chart
+      time: new Date(run.checkTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      responseTime: run.responseTimeMs,
+      uptime: run.successful ? 100 : 0,
     }));
   }, [runsData]);
 
   const averageResponseTime = useMemo(() => {
-    if (runsData.length === 0) return 0;
-    const totalResponseTime = runsData.reduce((sum, run) => sum + run.latency_ms, 0);
-    return (totalResponseTime / runsData.length).toFixed(2);
-  }, [runsData]);
+    return metricsData?.averageResponseTimeMs?.toFixed(2) || 0;
+  }, [metricsData]);
 
   const uptimePercentage = useMemo(() => {
-    if (runsData.length === 0) return 'N/A';
-    const upRuns = runsData.filter(run => run.status === 'UP').length;
-    return ((upRuns / runsData.length) * 100).toFixed(2);
-  }, [runsData]);
+    return metricsData?.uptimePercentage?.toFixed(2) || 'N/A';
+  }, [metricsData]);
 
   const incidents = useMemo(() => {
-    // A simple way to detect incidents: when status changes from UP to DOWN/DEGRADED
     const detectedIncidents = [];
     for (let i = 1; i < runsData.length; i++) {
-      if (runsData[i].status !== 'UP' && runsData[i - 1].status === 'UP') {
-        // Incident started
+      if (!runsData[i].successful && runsData[i - 1].successful) {
         detectedIncidents.push({
           id: runsData[i].id,
-          startTime: new Date(runsData[i].started_at).toLocaleString(),
-          status: runsData[i].status,
-          description: `Service went from UP to ${runsData[i].status}`, // Simplified description
+          startTime: new Date(runsData[i].checkTime).toLocaleString(),
+          status: 'DOWN', // Консолидировано для отображения UP/DOWN
+          description: `Service went from UP to DOWN (Response Code: ${runsData[i].responseCode})`,
         });
       }
     }
     return detectedIncidents;
   }, [runsData]);
+
+  const incidentCount = incidents.length;
 
   const containerStyle = { maxWidth: 1200, margin: '0 auto', padding: 24, color: '#1a1a1a' };
   const headerStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 };
@@ -78,7 +88,7 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
   const actionsStyle = { display: 'flex', gap: 12 };
   const editBtn = { padding: '10px 16px', borderRadius: 8, border: '1px solid #6D0475', background: '#6D0475', color: '#ffffff', cursor: 'pointer', fontSize: '14px', fontWeight: 500, transition: 'all 0.2s ease' };
   const deleteBtn = { padding: '10px 16px', borderRadius: 8, border: '1px solid #dc2626', background: '#dc2626', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 500, transition: 'all 0.2s ease' };
-  
+
   const tabStyle = { padding: '10px 16px', borderRadius: 8, border: '1px solid #E5B8E8', background: '#ffffff', color: '#6D0475', cursor: 'pointer', fontSize: '14px', fontWeight: 500, transition: 'all 0.2s ease' };
   const activeTabStyle = { ...tabStyle, background: '#6D0475', color: '#ffffff' };
   const tabsStyle = { display: 'flex', gap: 8, marginBottom: 24 };
@@ -101,8 +111,8 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
     return null;
   };
 
-  if (isLoadingRuns) {
-    return <div style={containerStyle}>Загрузка данных проверки...</div>;
+  if (isLoadingData) {
+    return <div style={containerStyle}>Загрузка данных сервиса...</div>;
   }
 
   return (
@@ -110,7 +120,7 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
       <div style={headerStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <button style={backBtn} onClick={onBack}>← Назад</button>
-          <h1 style={titleStyle}>Детали проверки: {check.name}</h1>
+          <h1 style={titleStyle}>Детали сервиса: {check.name}</h1>
         </div>
         <div style={actionsStyle}>
           <button style={editBtn} onClick={() => onEdit(check)}>Редактировать</button>
@@ -121,6 +131,9 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
       <div style={tabsStyle}>
         <button style={activeTab === 'overview' ? activeTabStyle : tabStyle} onClick={() => setActiveTab('overview')}>
           Обзор
+        </button>
+        <button style={activeTab === 'details' ? activeTabStyle : tabStyle} onClick={() => setActiveTab('details')}>
+          Детали
         </button>
         <button style={activeTab === 'incidents' ? activeTabStyle : tabStyle} onClick={() => setActiveTab('incidents')}>
           Инциденты
@@ -182,6 +195,30 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
         </>
       )}
 
+      {activeTab === 'details' && (
+        <div style={cardStyle}>
+          <h3 style={{ margin: '0 0 16px 0', color: '#6D0475', fontSize: 18, fontWeight: 600 }}>Детали сервиса</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
+            <div><strong>Название:</strong> {check.name}</div>
+            <div><strong>Описание:</strong> {check.description || '-'}</div>
+            <div><strong>URL:</strong> <a href={check.url} target="_blank" rel="noreferrer" style={{ color: '#6D0475', textDecoration: 'none' }}>{check.url}</a></div>
+            <div><strong>Тип сервиса:</strong> {check.serviceType}</div>
+            <div><strong>Включен:</strong> {check.enabled ? 'Да' : 'Нет'}</div>
+            <div><strong>Интервал проверки:</strong> {check.checkIntervalMinutes} мин</div>
+            <div><strong>Таймаут:</strong> {check.timeoutSeconds} сек</div>
+
+            {check.serviceType === 'API' && (
+              <>
+                <div><strong>HTTP Метод:</strong> {check.httpMethod || '-'}</div>
+                <div><strong>Ожидаемый код ответа:</strong> {check.expectedStatusCode || '-'}</div>
+                <div><strong>Ожидаемое тело ответа:</strong> {check.expectedResponseBody || '-'}</div>
+                {/* <div><strong>Заголовки:</strong> {JSON.stringify(check.headers) || '-'}</div> */}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {activeTab === 'incidents' && (
         <div style={cardStyle}>
           <h3 style={{ margin: '0 0 16px 0', color: '#6D0475', fontSize: 18, fontWeight: 600 }}>История инцидентов</h3>
@@ -199,14 +236,15 @@ function CheckDetail({ check, onEdit, onDelete, onBack }) { // Renamed from Serv
                   <tr key={incident.id}>
                     <td style={tdStyle}>{incident.startTime}</td>
                     <td style={tdStyle}>
-                      <span style={{ 
-                        padding: '2px 8px', 
-                        borderRadius: 12, 
-                        background: incident.status === 'UP' ? '#10b981' : (incident.status === 'DEGRADED' ? '#f59e0b' : '#ef4444'),
+
+                      <span style={{
+                        padding: '2px 8px',
+                        borderRadius: 12,
+                        background: incident.status === 'UP' ? '#10b981' : '#ef4444',
                         color: '#fff',
                         fontSize: 12
                       }}>
-                        {incident.status === 'UP' ? 'UP' : (incident.status === 'DEGRADED' ? 'DEGRADED' : 'DOWN')}
+                        {incident.status}
                       </span>
                     </td>
                     <td style={tdStyle}>{incident.description}</td>

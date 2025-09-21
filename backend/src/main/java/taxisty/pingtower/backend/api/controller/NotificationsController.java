@@ -1,22 +1,28 @@
 package taxisty.pingtower.backend.api.controller;
 
-import jakarta.validation.Valid;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
-import taxisty.pingtower.backend.api.dto.TestNotificationRequest;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.validation.Valid;
 import taxisty.pingtower.backend.api.dto.NotificationRequest;
+import taxisty.pingtower.backend.api.dto.TestNotificationRequest;
 import taxisty.pingtower.backend.notifications.repo.InMemoryNotificationRepository;
 import taxisty.pingtower.backend.notifications.service.NotificationService;
 import taxisty.pingtower.backend.storage.dto.CreateNotificationChannelRequest;
 import taxisty.pingtower.backend.storage.model.Alert;
 import taxisty.pingtower.backend.storage.model.NotificationChannel;
 import taxisty.pingtower.backend.storage.model.NotificationDelivery;
-
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -29,7 +35,7 @@ public class NotificationsController {
         this.service = service;
     }
 
-    @PostMapping("/channels")
+    @PostMapping("/channels/create")
     public ResponseEntity<NotificationChannel> createChannel(@Valid @RequestBody CreateNotificationChannelRequest req) {
         if (!StringUtils.hasText(req.type()) || !StringUtils.hasText(req.name())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
@@ -38,7 +44,7 @@ public class NotificationsController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ch);
     }
 
-    @GetMapping("/channels")
+    @GetMapping("/channels/list")
     public Map<String, Object> listChannels() {
         Map<String, Object> resp = new HashMap<>();
         resp.put("items", repo.listChannels());

@@ -70,13 +70,13 @@ public class MonitoredServiceController {
             logger.error("No authentication found in security context");
             throw new RuntimeException("No authentication found in security context");
         }
-        String username = authentication.getName();
-        logger.debug("Username from authentication: {}", username);
-        if (username == null) {
-            logger.error("No username found in authentication");
-            throw new RuntimeException("No username found in authentication");
+        String email = authentication.getName();
+        logger.debug("Email from authentication: {}", email);
+        if (email == null) {
+            logger.error("No email found in authentication");
+            throw new RuntimeException("No email found in authentication");
         }
-        Long userId = userService.getUserByUsername(username).getId();
+        Long userId = userService.getUserByEmail(email).getId();
         logger.debug("User ID: {}", userId);
         return userId;
     }

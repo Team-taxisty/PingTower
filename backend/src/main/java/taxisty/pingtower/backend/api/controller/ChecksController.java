@@ -26,8 +26,8 @@ public class ChecksController {
 
     @GetMapping
     public Map<String, Object> list(
-            @RequestParam(name = "limit", required = false, defaultValue = "50") Integer limit,
-            @RequestParam(name = "cursor", required = false) String cursor
+        @RequestParam(name = "limit", required = false, defaultValue = "50") Integer limit,
+        @RequestParam(name = "cursor", required = false) String cursor
     ) {
         int lm = Math.min(Math.max(limit == null ? 50 : limit, 1), 500);
         int offset = 0;
@@ -54,7 +54,7 @@ public class ChecksController {
 
     @PostMapping
     public ResponseEntity<CheckDto> create(
-            @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
+        @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody CheckCreateDto body
     ) {
         if (!StringUtils.hasText(idempotencyKey)) {

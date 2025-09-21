@@ -25,12 +25,12 @@ public class RunsController {
 
     @GetMapping
     public Map<String, Object> list(
-            @RequestParam(name = "check_id", required = false) UUID checkId,
-            @RequestParam(name = "from", required = false)
+        @RequestParam(name = "check_id", required = false) UUID checkId,
+        @RequestParam(name = "from", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
-            @RequestParam(name = "to", required = false)
+        @RequestParam(name = "to", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
-            @RequestParam(name = "limit", required = false, defaultValue = "1000") Integer limit
+        @RequestParam(name = "limit", required = false, defaultValue = "1000") Integer limit
     ) {
         int lm = Math.min(Math.max(limit == null ? 1000 : limit, 1), 10000);
         List<RunDto> items = runService.list(checkId, from, to, lm);

@@ -44,10 +44,6 @@ public class UserService {
      * Register a new user
      */
     public AuthResponse registerUser(RegisterRequest request) {
-        if (userRepository.existsByUsername(request.username())) {
-            throw new RuntimeException("Username is already taken!");
-        }
-        
         if (userRepository.existsByEmail(request.email())) {
             throw new RuntimeException("Email is already in use!");
         }
@@ -65,7 +61,7 @@ public class UserService {
         
         // Authenticate the user
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password()));
+                new UsernamePasswordAuthenticationToken(request.email(), request.password()));
         
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = jwtUtil.generateToken(authentication);
@@ -78,12 +74,12 @@ public class UserService {
      */
     public AuthResponse authenticateUser(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password()));
+                new UsernamePasswordAuthenticationToken(request.email(), request.password()));
         
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = jwtUtil.generateToken(authentication);
         
-        User user = userRepository.findByUsername(request.username())
+        User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         // Update last login
@@ -97,8 +93,8 @@ public class UserService {
      * Get current user profile
      */
     public UserProfile getCurrentUserProfile() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         return new UserProfile(
@@ -110,10 +106,10 @@ public class UserService {
     }
     
     /**
-     * Get user by username
+     * Get user by email
      */
-    public User getUserByUsername(String username) {
-        return userRepository.findByUsername(username)
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 }

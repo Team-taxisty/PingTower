@@ -35,7 +35,7 @@ import taxisty.pingtower.backend.storage.model.NotificationChannel;
  * REST API controller for alerts and notifications management
  */
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api")
 public class AlertController {
 
     private final AlertRepository alertRepository;

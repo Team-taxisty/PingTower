@@ -3,41 +3,42 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import api from '../utils/api';
 
 function Reports() {
-  const [period, setPeriod] = useState('week'); // Keep period selection if needed for future filtering
-  const [checks, setChecks] = useState([]);
-  const [selectedCheckId, setSelectedCheckId] = useState('');
-  const [reportData, setReportData] = useState([]); // Stores runs data
-  const [isLoadingChecks, setIsLoadingChecks] = useState(true);
+  const [period, setPeriod] = useState('week');
+  const [services, setServices] = useState([]);
+  const [selectedServiceId, setSelectedServiceId] = useState('');
+  const [reportData, setReportData] = useState([]); // Stores results from /api/v1/monitoring/services/{serviceId}/results
+  const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
 
   useEffect(() => {
-    const fetchChecks = async () => {
-      setIsLoadingChecks(true);
+    const fetchServices = async () => {
+      setIsLoadingServices(true);
       try {
-        const response = await api('/v1/api/checks');
+        const response = await api('/v1/api/services');
         if (response.ok) {
           const data = await response.json();
-          setChecks(data.items || []);
-          if (data.items.length > 0) {
-            setSelectedCheckId(data.items[0].id); // Select first check by default
+          setServices(data.content || []);
+          if (data.content.length > 0) {
+            setSelectedServiceId(data.content[0].id);
           }
         } else {
-          console.error('Failed to fetch checks', response.status);
+          const errorText = await response.text();
+          console.error('Failed to fetch services:', response.status, errorText);
         }
       } catch (error) {
-        console.error('Error fetching checks:', error);
+        console.error('Error fetching services:', error);
       } finally {
-        setIsLoadingChecks(false);
+        setIsLoadingServices(false);
       }
     };
-    fetchChecks();
+    fetchServices();
   }, []);
 
   useEffect(() => {
-    if (selectedCheckId && !isLoadingChecks) {
+    if (selectedServiceId && !isLoadingServices) {
       handleGenerateReport();
     }
-  }, [selectedCheckId, period, isLoadingChecks]); // Regenerate report when check or period changes
+  }, [selectedServiceId, period, isLoadingServices]);
 
   const handleGenerateReport = async () => {
     setIsLoadingReport(true);
@@ -52,12 +53,13 @@ function Reports() {
         fromDate.setMonth(now.getMonth() - 1);
       }
 
-      const response = await api(`/v1/api/runs?check_id=${selectedCheckId}&from=${fromDate.toISOString()}&to=${now.toISOString()}`);
+      const response = await api(`/api/v1/monitoring/services/${selectedServiceId}/results?since=${fromDate.toISOString()}&size=1000`); // Updated endpoint and parameters
       if (response.ok) {
         const data = await response.json();
-        setReportData(data.items || []);
+        setReportData(data.content || []); // Updated to data.content
       } else {
-        console.error('Failed to fetch report data', response.status);
+        const errorText = await response.text();
+        console.error('Failed to fetch report data', response.status, errorText);
         setReportData([]);
       }
     } catch (error) {
@@ -70,21 +72,22 @@ function Reports() {
 
   const averageResponseTime = useMemo(() => {
     if (reportData.length === 0) return 0;
-    const totalResponseTime = reportData.reduce((sum, run) => sum + run.latency_ms, 0);
+    const totalResponseTime = reportData.reduce((sum, run) => sum + (run.responseTimeMs || 0), 0); // Updated field name
     return (totalResponseTime / reportData.length).toFixed(2);
   }, [reportData]);
 
   const uptimePercentage = useMemo(() => {
     if (reportData.length === 0) return 'N/A';
-    const upRuns = reportData.filter(run => run.status === 'UP').length;
+    const upRuns = reportData.filter(run => run.successful).length; // Updated field name
     return ((upRuns / reportData.length) * 100).toFixed(2);
   }, [reportData]);
 
   const incidentCount = useMemo(() => {
-    // Simple incident count: when status changes from UP to DOWN/DEGRADED
     let count = 0;
     for (let i = 1; i < reportData.length; i++) {
-      if (reportData[i].status !== 'UP' && reportData[i - 1].status === 'UP') {
+      const currentStatus = reportData[i].successful;
+      const previousStatus = reportData[i - 1].successful;
+      if (!currentStatus && previousStatus) { // Incident is when it goes from successful to not successful
         count++;
       }
     }
@@ -99,7 +102,7 @@ function Reports() {
   const buttonStyle = { padding: '10px 16px', borderRadius: 8, border: '1px solid #6D0475', background: '#6D0475', color: '#ffffff', cursor: 'pointer', fontSize: '14px', fontWeight: 500, transition: 'all 0.2s ease' };
   const cardStyle = { background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, marginBottom: 16, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' };
 
-  const metricsStyle = { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }; // Changed to 3 columns
+  const metricsStyle = { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 };
 
   const metricCardStyle = { background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, textAlign: 'center', boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' };
   const metricValueStyle = { fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: '8px 0' };
@@ -111,58 +114,58 @@ function Reports() {
 
   const processedChartData = useMemo(() => {
     return reportData.map(run => ({
-      time: new Date(run.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      responseTime: run.latency_ms,
+      time: new Date(run.checkTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), // Updated field name
+      responseTime: run.responseTimeMs,
     }));
   }, [reportData]);
 
-  const selectedCheckName = useMemo(() => {
-    const check = checks.find(c => c.id === selectedCheckId);
-    return check ? check.name : 'Не выбрано';
-  }, [checks, selectedCheckId]);
+  const selectedServiceName = useMemo(() => {
+    const service = services.find(s => s.id === selectedServiceId);
+    return service ? service.name : 'Не выбрано';
+  }, [services, selectedServiceId]);
 
   return (
     <div style={containerStyle}>
       <div style={headerStyle}>
-        <h1 style={titleStyle}>Отчёты для: {selectedCheckName}</h1>
+        <h1 style={titleStyle}>Отчёты для: {selectedServiceName}</h1>
         <div style={controlsStyle}>
-          <select style={selectStyle} value={period} onChange={(e) => setPeriod(e.target.value)} disabled={isLoadingChecks || isLoadingReport}>
+          <select style={selectStyle} value={period} onChange={(e) => setPeriod(e.target.value)} disabled={isLoadingServices || isLoadingReport}>
             <option value="day">День</option>
             <option value="week">Неделя</option>
             <option value="month">Месяц</option>
           </select>
-          <select style={selectStyle} value={selectedCheckId} onChange={(e) => setSelectedCheckId(e.target.value)} disabled={isLoadingChecks || isLoadingReport}>
-            {isLoadingChecks ? (
-              <option value="">Загрузка проверок...</option>
+          <select style={selectStyle} value={selectedServiceId} onChange={(e) => setSelectedServiceId(e.target.value)} disabled={isLoadingServices || isLoadingReport}>
+            {isLoadingServices ? (
+              <option value="">Загрузка сервисов...</option>
             ) : (
-              checks.length > 0 ? (
-                checks.map(check => (
-                  <option key={check.id} value={check.id}>{check.name}</option>
+              services.length > 0 ? (
+                services.map(service => (
+                  <option key={service.id} value={service.id}>{service.name}</option>
                 ))
               ) : (
-                <option value="">Нет доступных проверок</option>
+                <option value="">Нет доступных сервисов</option>
               )
             )}
           </select>
-          <button style={buttonStyle} onClick={handleGenerateReport} disabled={!selectedCheckId || isLoadingReport}>
+          <button style={buttonStyle} onClick={handleGenerateReport} disabled={!selectedServiceId || isLoadingReport}>
             {isLoadingReport ? 'Генерация...' : 'Сгенерировать отчет'}
           </button>
         </div>
       </div>
 
-      {selectedCheckId && (reportData.length > 0 || isLoadingReport) ? (
+      {selectedServiceId && (reportData.length > 0 || isLoadingReport) ? (
         <>
           <div style={metricsStyle}>
             <div style={metricCardStyle}>
-              <div style={metricLabelStyle}>Аптайм (24ч)</div>
+              <div style={metricLabelStyle}>Аптайм ({period === 'day' ? '24ч' : period === 'week' ? '7д' : '30д'})</div>
               <div style={metricValueStyle}>{uptimePercentage}%</div>
             </div>
             <div style={metricCardStyle}>
-              <div style={metricLabelStyle}>Среднее время отклика (24ч)</div>
+              <div style={metricLabelStyle}>Среднее время отклика ({period === 'day' ? '24ч' : period === 'week' ? '7д' : '30д'})</div>
               <div style={metricValueStyle}>{averageResponseTime}ms</div>
             </div>
             <div style={metricCardStyle}>
-              <div style={metricLabelStyle}>Инциденты (24ч)</div>
+              <div style={metricLabelStyle}>Инциденты ({period === 'day' ? '24ч' : period === 'week' ? '7д' : '30д'})</div>
               <div style={metricValueStyle}>{incidentCount}</div>
             </div>
           </div>
@@ -188,27 +191,31 @@ function Reports() {
               <table style={tableStyle}>
                 <thead>
                   <tr>
-                    <th style={thStyle}>Время запуска</th>
+                    <th style={thStyle}>Время проверки</th>
                     <th style={thStyle}>Время отклика (ms)</th>
                     <th style={thStyle}>Статус</th>
+                    <th style={thStyle}>Код ответа</th>
+                    <th style={thStyle}>Сообщение об ошибке</th>
                   </tr>
                 </thead>
                 <tbody>
                   {reportData.map(run => (
                     <tr key={run.id}>
-                      <td style={tdStyle}>{new Date(run.started_at).toLocaleString()}</td>
-                      <td style={tdStyle}>{run.latency_ms}</td>
+                      <td style={tdStyle}>{new Date(run.checkTime).toLocaleString()}</td>
+                      <td style={tdStyle}>{run.responseTimeMs}</td>
                       <td style={tdStyle}>
-                        <span style={{ 
-                          padding: '2px 8px', 
-                          borderRadius: 12, 
-                          background: run.status === 'UP' ? '#10b981' : (run.status === 'DEGRADED' ? '#f59e0b' : '#ef4444'),
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: 12,
+                          background: run.successful ? '#10b981' : '#ef4444',
                           color: '#fff',
                           fontSize: 12
                         }}>
-                          {run.status}
+                          {run.successful ? 'Успешно' : 'Ошибка'}
                         </span>
                       </td>
+                      <td style={tdStyle}>{run.responseCode || '-'}</td>
+                      <td style={tdStyle}>{run.errorMessage || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -219,7 +226,7 @@ function Reports() {
       ) : (
         <div style={cardStyle}>
           <p style={{ color: '#6b7280', fontSize: '14px' }}>
-            {isLoadingReport ? 'Генерация отчета...' : 'Выберите проверку и период для генерации отчета.'}
+            {isLoadingReport ? 'Генерация отчета...' : 'Выберите сервис и период для генерации отчета.'}
           </p>
         </div>
       )}

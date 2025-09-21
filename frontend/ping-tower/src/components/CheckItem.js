@@ -1,6 +1,6 @@
 import StatusBadge from './StatusBadge';
 
-function CheckItem({ check, onClick }) { // Renamed from ServiceItem and service prop
+function CheckItem({ check, onClick }) {
   const containerStyle = {
     display: 'flex',
     alignItems: 'center',
@@ -17,8 +17,9 @@ function CheckItem({ check, onClick }) { // Renamed from ServiceItem and service
 
   const metaStyle = { display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0, flex: 1 };
   const nameStyle = { fontWeight: 600, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
-  const targetStyle = { color: '#6D0475', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
-  const typeStyle = { color: '#999', fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
+  const urlStyle = { color: '#6D0475', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }; // Renamed from targetStyle
+  const descriptionStyle = { color: '#999', fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }; // New style for description
+  const serviceTypeStyle = { color: '#999', fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }; // New style for serviceType
 
   return (
     <div style={containerStyle} onClick={onClick}>
@@ -26,12 +27,13 @@ function CheckItem({ check, onClick }) { // Renamed from ServiceItem and service
         <div style={{ width: 10, height: 10, borderRadius: 9999, background: '#6D0475' }} />
         <div style={metaStyle}>
           <span style={nameStyle}>{check.name}</span>
-          {check.target ? (
-            <a href={check.target} style={targetStyle} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
-              {check.target}
+          {check.url ? (
+            <a href={check.url} style={urlStyle} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+              {check.url}
             </a>
           ) : null}
-          {check.type && <span style={typeStyle}>{check.type}</span>}
+          {check.description && <span style={descriptionStyle}>{check.description}</span>}
+          {check.serviceType && <span style={serviceTypeStyle}>{check.serviceType}</span>}
         </div>
       </div>
       <StatusBadge status={check.status} />

@@ -27,7 +27,7 @@ import taxisty.pingtower.backend.storage.model.ServiceMetrics;
  * REST API controller for monitoring data and analytics
  */
 @RestController
-@RequestMapping("/api/v1/monitoring")
+@RequestMapping("/api/monitoring")
 public class MonitoringDataController {
 
     private final MonitoringService monitoringService;

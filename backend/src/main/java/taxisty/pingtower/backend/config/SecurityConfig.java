@@ -48,23 +48,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/health", "/api/info").permitAll()
                 .requestMatchers("/api/auth/**").permitAll() // Auth endpoints
                 .requestMatchers("/actuator/**").permitAll()
-                // Swagger/OpenAPI endpoints
-                .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/swagger-ui/index.html").permitAll()
-                .requestMatchers("/v3/api-docs/**", "/v3/api-docs").permitAll()
-                .requestMatchers("/swagger-resources/**").permitAll()
-                .requestMatchers("/webjars/**").permitAll()
-                .requestMatchers("/favicon.ico").permitAll()
-                // Additional SpringDoc OpenAPI endpoints
-                .requestMatchers("/swagger-config").permitAll()
-                .requestMatchers("/swagger-ui-init.js").permitAll()
-                .requestMatchers("/swagger-ui-bundle.js").permitAll()
-                .requestMatchers("/swagger-ui-standalone-preset.js").permitAll()
-                .requestMatchers("/swagger-ui.css").permitAll()
-                // Additional OpenAPI endpoints
-                .requestMatchers("/configuration/ui", "/configuration/security").permitAll()
-                // All other endpoints require authentication
-                .anyRequest().authenticated()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .anyRequest().permitAll()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
             

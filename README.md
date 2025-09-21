@@ -56,8 +56,7 @@
 
 <h1 align="center">Архитектура системы</h1>
 
-<img width="2581" height="1641" alt="PingTowerC4Diagram drawio" src="https://github.com/user-attachments/assets/e888f90c-12aa-476b-a8a9-ba1d4e8c2ad6" />
-
+<img width="1472" height="722" alt="PingTowerC4Diagram drawio (2)" src="https://github.com/user-attachments/assets/c6b4c3c1-4e5f-414c-9535-ae3402e35fcb" />
 
 <h1 align="center">Use Cases — PingTower</h1>
 
