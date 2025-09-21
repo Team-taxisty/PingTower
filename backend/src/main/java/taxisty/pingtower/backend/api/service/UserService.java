@@ -37,6 +37,9 @@ public class UserService {
     @Autowired
     private JwtUtil jwtUtil;
     
+    @Autowired
+    private TelegramOnboardingService telegramOnboardingService;
+    
     /**
      * Register a new user
      */
@@ -57,6 +60,8 @@ public class UserService {
         user.setIsActive(true);
         
         user = userRepository.save(user);
+
+        TelegramOnboardingService.TelegramLinkDetails linkDetails = telegramOnboardingService.generateLink(user.getUsername());
         
         // Authenticate the user
         Authentication authentication = authenticationManager.authenticate(
@@ -65,6 +70,21 @@ public class UserService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = jwtUtil.generateToken(authentication);
         
+        if (linkDetails != null) {
+            return new AuthResponse(
+                    jwt,
+                    user.getId(),
+                    user.getUsername(),
+                    user.getEmail(),
+                    user.getRoles(),
+                    linkDetails.link(),
+                    linkDetails.token(),
+                    linkDetails.alreadyLinked(),
+                    linkDetails.expiresAt(),
+                    linkDetails.botUsername()
+            );
+        }
+
         return new AuthResponse(jwt, user.getId(), user.getUsername(), user.getEmail(), user.getRoles());
     }
     

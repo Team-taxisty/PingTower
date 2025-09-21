@@ -25,3 +25,7 @@ monitoring:
     url: jdbc:clickhouse://clickhouse:8123/monitoring
     username: default
     password: ""
+
+pingtower:
+  telegram:
+    bot-service-url: http://python-bot:5000

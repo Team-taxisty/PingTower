@@ -77,7 +77,7 @@ public class NotificationsController {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            // Создаем Alert из запроса
+            // РЎРѕР·РґР°РµРј Alert РёР· Р·Р°РїСЂРѕСЃР°
             Alert alert = new Alert(
                     0L,
                     0L,
@@ -95,7 +95,7 @@ public class NotificationsController {
                     )
             );
             
-            // Находим канал уведомлений для пользователя
+            // РќР°С…РѕРґРёРј РєР°РЅР°Р» СѓРІРµРґРѕРјР»РµРЅРёР№ РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
             NotificationChannel channel = findChannelForUser(req.username());
             if (channel == null) {
                 response.put("success", false);
@@ -103,7 +103,7 @@ public class NotificationsController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
             }
             
-            // Отправляем уведомление
+            // РћС‚РїСЂР°РІР»СЏРµРј СѓРІРµРґРѕРјР»РµРЅРёРµ
             NotificationDelivery delivery = service.sendToChannel(alert, channel);
             
             response.put("success", "SUCCESS".equals(delivery.status()));
@@ -120,8 +120,8 @@ public class NotificationsController {
     }
     
     private NotificationChannel findChannelForUser(String username) {
-        // Ищем канал уведомлений для пользователя
-        // Сначала пробуем найти Python Bot канал, затем Telegram
+        // РС‰РµРј РєР°РЅР°Р» СѓРІРµРґРѕРјР»РµРЅРёР№ РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
+        // РЎРЅР°С‡Р°Р»Р° РїСЂРѕР±СѓРµРј РЅР°Р№С‚Рё Python Bot РєР°РЅР°Р», Р·Р°С‚РµРј Telegram
         return repo.listChannels().stream()
                 .filter(ch -> ch.type().equals("PYTHON_BOT"))
                 .findFirst()

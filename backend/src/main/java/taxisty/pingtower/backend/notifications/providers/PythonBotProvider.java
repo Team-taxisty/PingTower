@@ -38,7 +38,7 @@ public class PythonBotProvider implements ChannelProvider {
             JsonNode cfg = mapper.readTree(channel.configuration());
             String botUrl = required(cfg, "botUrl");
             
-            // Извлекаем данные из метаданных alert
+            // РР·РІР»РµРєР°РµРј РґР°РЅРЅС‹Рµ РёР· РјРµС‚Р°РґР°РЅРЅС‹С… alert
             Map<String, String> metadata = alert.metadata();
             String username = metadata.get("username");
             String serviceName = metadata.get("service_name");
@@ -49,7 +49,7 @@ public class PythonBotProvider implements ChannelProvider {
                 return new DeliveryResult(false, null, "Missing username or service_name in alert metadata", null);
             }
             
-            // Формируем запрос к Python боту
+            // Р¤РѕСЂРјРёСЂСѓРµРј Р·Р°РїСЂРѕСЃ Рє Python Р±РѕС‚Сѓ
             Map<String, Object> requestBody = Map.of(
                 "username", (Object) username,
                 "service_name", (Object) serviceName,
