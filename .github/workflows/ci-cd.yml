@@ -21,6 +21,8 @@ jobs:
         cd backend
         chmod +x gradlew
         ./gradlew build -x test
+      env:
+        JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         
     - name: Set up Node.js
       uses: actions/setup-node@v4
