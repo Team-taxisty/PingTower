@@ -20,11 +20,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import taxisty.pingtower.backend.api.dto.MonitoredServiceRequest;
 import taxisty.pingtower.backend.api.dto.MonitoredServiceResponse;
@@ -45,7 +40,6 @@ import taxisty.pingtower.backend.storage.model.MonitoredService;
  */
 @RestController
 @RequestMapping("/api/services")
-@Tag(name = "Мониторируемые сервисы", description = "API для управления мониторируемыми сервисами")
 public class MonitoredServiceController {
 
     private static final Logger logger = LoggerFactory.getLogger(MonitoredServiceController.class);
@@ -91,15 +85,10 @@ public class MonitoredServiceController {
      * Get all monitored services with pagination
      */
     @GetMapping
-    @Operation(summary = "Получить все мониторируемые сервисы", description = "Возвращает постраничный список мониторируемых сервисов для аутентифицированного пользователя")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Сервисы успешно получены"),
-        @ApiResponse(responseCode = "401", description = "Не авторизован - требуется аутентификация")
-    })
     public ResponseEntity<Page<MonitoredServiceResponse>> getAllServices(
             Pageable pageable,
-            @Parameter(description = "Фильтр по статусу включения") @RequestParam(required = false) Boolean enabled,
-            @Parameter(description = "Поиск по имени сервиса") @RequestParam(required = false) String search) {
+            @RequestParam(required = false) Boolean enabled,
+            @RequestParam(required = false) String search) {
         
         Long userId = getCurrentUserId();
         
@@ -123,13 +112,7 @@ public class MonitoredServiceController {
      * Get a specific monitored service by ID
      */
     @GetMapping("/{id}")
-    @Operation(summary = "Получить сервис по ID", description = "Возвращает детали конкретного мониторируемого сервиса")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Сервис найден"),
-        @ApiResponse(responseCode = "404", description = "Сервис не найден"),
-        @ApiResponse(responseCode = "401", description = "Не авторизован")
-    })
-    public ResponseEntity<MonitoredServiceResponse> getServiceById(@Parameter(description = "ID сервиса") @PathVariable Long id) {
+    public ResponseEntity<MonitoredServiceResponse> getServiceById(@PathVariable Long id) {
         Long userId = getCurrentUserId();
         Optional<MonitoredService> service = serviceRepository.findById(id);
         
@@ -144,12 +127,6 @@ public class MonitoredServiceController {
      * Create a new monitored service
      */
     @PostMapping
-    @Operation(summary = "Создать новый сервис", description = "Создает новый мониторируемый сервис и опционально начинает мониторинг")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Сервис успешно создан"),
-        @ApiResponse(responseCode = "400", description = "Некорректные данные запроса"),
-        @ApiResponse(responseCode = "401", description = "Не авторизован")
-    })
     public ResponseEntity<MonitoredServiceResponse> createService(
             @Valid @RequestBody MonitoredServiceRequest request) {
         
@@ -174,15 +151,8 @@ public class MonitoredServiceController {
      * Update an existing monitored service
      */
     @PutMapping("/{id}")
-    @Operation(summary = "Обновить сервис", description = "Обновляет конфигурацию существующего мониторируемого сервиса")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Сервис успешно обновлен"),
-        @ApiResponse(responseCode = "404", description = "Сервис не найден"),
-        @ApiResponse(responseCode = "400", description = "Некорректные данные запроса"),
-        @ApiResponse(responseCode = "401", description = "Не авторизован")
-    })
     public ResponseEntity<MonitoredServiceResponse> updateService(
-            @Parameter(description = "ID сервиса") @PathVariable Long id,
+            @PathVariable Long id,
             @Valid @RequestBody MonitoredServiceRequest request) {
         
         Long userId = getCurrentUserId();
@@ -218,13 +188,7 @@ public class MonitoredServiceController {
      * Delete a monitored service
      */
     @DeleteMapping("/{id}")
-    @Operation(summary = "Удалить сервис", description = "Удаляет мониторируемый сервис и останавливает мониторинг")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "204", description = "Сервис успешно удален"),
-        @ApiResponse(responseCode = "404", description = "Сервис не найден"),
-        @ApiResponse(responseCode = "401", description = "Не авторизован")
-    })
-    public ResponseEntity<Void> deleteService(@Parameter(description = "ID сервиса") @PathVariable Long id) {
+    public ResponseEntity<Void> deleteService(@PathVariable Long id) {
         Long userId = getCurrentUserId();
         Optional<MonitoredService> service = serviceRepository.findById(id);
         
@@ -247,15 +211,9 @@ public class MonitoredServiceController {
      * Enable/disable a monitored service
      */
     @PutMapping("/{id}/status")
-    @Operation(summary = "Переключить статус сервиса", description = "Включает или отключает мониторинг для сервиса")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Статус успешно обновлен"),
-        @ApiResponse(responseCode = "404", description = "Сервис не найден"),
-        @ApiResponse(responseCode = "401", description = "Не авторизован")
-    })
     public ResponseEntity<MonitoredServiceResponse> toggleServiceStatus(
-            @Parameter(description = "ID сервиса") @PathVariable Long id,
-            @Parameter(description = "Включить или отключить мониторинг") @RequestParam boolean enabled) {
+            @PathVariable Long id,
+            @RequestParam boolean enabled) {
         
         Long userId = getCurrentUserId();
         Optional<MonitoredService> serviceOpt = serviceRepository.findById(id);
@@ -286,14 +244,7 @@ public class MonitoredServiceController {
      * Test a service configuration (manual check)
      */
     @PostMapping("/{id}/test")
-    @Operation(summary = "Протестировать сервис", description = "Выполняет ручную проверку подключения для сервиса")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Тест завершен"),
-        @ApiResponse(responseCode = "404", description = "Сервис не найден"),
-        @ApiResponse(responseCode = "500", description = "Тест не удался"),
-        @ApiResponse(responseCode = "401", description = "Не авторизован")
-    })
-    public ResponseEntity<String> testService(@Parameter(description = "ID сервиса") @PathVariable Long id) {
+    public ResponseEntity<String> testService(@PathVariable Long id) {
         Long userId = getCurrentUserId();
         Optional<MonitoredService> serviceOpt = serviceRepository.findById(id);
         

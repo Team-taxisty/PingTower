@@ -21,11 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import taxisty.pingtower.backend.api.dto.AlertResponse;
 import taxisty.pingtower.backend.api.dto.NotificationChannelRequest;
@@ -41,7 +36,6 @@ import taxisty.pingtower.backend.storage.model.NotificationChannel;
  */
 @RestController
 @RequestMapping("/api")
-@Tag(name = "Оповещения", description = "API для управления оповещениями и каналами уведомлений")
 public class AlertController {
 
     private final AlertRepository alertRepository;
@@ -61,16 +55,12 @@ public class AlertController {
      * Get all alerts with filtering options
      */
     @GetMapping("/alerts")
-    @Operation(summary = "Получить все оповещения", description = "Возвращает список оповещений с возможностью фильтрации")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Оповещения успешно получены")
-    })
     public ResponseEntity<Page<AlertResponse>> getAlerts(
             Pageable pageable,
-            @Parameter(description = "ID сервиса для фильтрации") @RequestParam(required = false) Long serviceId,
-            @Parameter(description = "Фильтр по разрешенным оповещениям") @RequestParam(required = false) Boolean resolved,
-            @Parameter(description = "Уровень серьезности") @RequestParam(required = false) String severity,
-            @Parameter(description = "Дата начала периода") @RequestParam(required = false) String since) {
+            @RequestParam(required = false) Long serviceId,
+            @RequestParam(required = false) Boolean resolved,
+            @RequestParam(required = false) String severity,
+            @RequestParam(required = false) String since) {
         
         Page<Alert> alerts;
         LocalDateTime sinceTime = parseDateTimeParam(since, LocalDateTime.now().minusDays(30));
@@ -98,12 +88,7 @@ public class AlertController {
      * Get a specific alert by ID
      */
     @GetMapping("/alerts/{id}")
-    @Operation(summary = "Получить оповещение по ID", description = "Возвращает детали конкретного оповещения")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Оповещение найдено"),
-        @ApiResponse(responseCode = "404", description = "Оповещение не найдено")
-    })
-    public ResponseEntity<AlertResponse> getAlert(@Parameter(description = "ID оповещения") @PathVariable Long id) {
+    public ResponseEntity<AlertResponse> getAlert(@PathVariable Long id) {
         Optional<Alert> alert = alertRepository.findById(id);
         
         if (alert.isEmpty()) {
@@ -117,12 +102,7 @@ public class AlertController {
      * Mark an alert as resolved
      */
     @PutMapping("/alerts/{id}/resolve")
-    @Operation(summary = "Разрешить оповещение", description = "Отмечает оповещение как разрешенное")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Оповещение разрешено"),
-        @ApiResponse(responseCode = "404", description = "Оповещение не найдено")
-    })
-    public ResponseEntity<AlertResponse> resolveAlert(@Parameter(description = "ID оповещения") @PathVariable Long id) {
+    public ResponseEntity<AlertResponse> resolveAlert(@PathVariable Long id) {
         Optional<Alert> alertOpt = alertRepository.findById(id);
         
         if (alertOpt.isEmpty()) {
@@ -141,12 +121,7 @@ public class AlertController {
      * Delete an alert
      */
     @DeleteMapping("/alerts/{id}")
-    @Operation(summary = "Удалить оповещение", description = "Удаляет оповещение из системы")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "204", description = "Оповещение удалено"),
-        @ApiResponse(responseCode = "404", description = "Оповещение не найдено")
-    })
-    public ResponseEntity<Void> deleteAlert(@Parameter(description = "ID оповещения") @PathVariable Long id) {
+    public ResponseEntity<Void> deleteAlert(@PathVariable Long id) {
         if (!alertRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
@@ -159,10 +134,6 @@ public class AlertController {
      * Get all notification channels
      */
     @GetMapping("/notifications/channels")
-    @Operation(summary = "Получить каналы уведомлений", description = "Возвращает список всех каналов уведомлений")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Каналы успешно получены")
-    })
     public ResponseEntity<List<NotificationChannelResponse>> getNotificationChannels() {
         List<NotificationChannel> channels = notificationChannelRepository.findAll();
         List<NotificationChannelResponse> response = channels.stream()
@@ -175,11 +146,6 @@ public class AlertController {
      * Create a new notification channel
      */
     @PostMapping("/notifications/channels")
-    @Operation(summary = "Создать канал уведомлений", description = "Создает новый канал для отправки уведомлений")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Канал создан успешно"),
-        @ApiResponse(responseCode = "400", description = "Некорректные данные")
-    })
     public ResponseEntity<NotificationChannelResponse> createNotificationChannel(
             @Valid @RequestBody NotificationChannelRequest request) {
         
@@ -194,14 +160,8 @@ public class AlertController {
      * Update a notification channel
      */
     @PutMapping("/notifications/channels/{id}")
-    @Operation(summary = "Обновить канал уведомлений", description = "Обновляет настройки существующего канала уведомлений")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Канал обновлен успешно"),
-        @ApiResponse(responseCode = "404", description = "Канал не найден"),
-        @ApiResponse(responseCode = "400", description = "Некорректные данные")
-    })
     public ResponseEntity<NotificationChannelResponse> updateNotificationChannel(
-            @Parameter(description = "ID канала") @PathVariable Long id,
+            @PathVariable Long id,
             @Valid @RequestBody NotificationChannelRequest request) {
         
         Optional<NotificationChannel> existingChannel = notificationChannelRepository.findById(id);
@@ -221,12 +181,7 @@ public class AlertController {
      * Delete a notification channel
      */
     @DeleteMapping("/notifications/channels/{id}")
-    @Operation(summary = "Удалить канал уведомлений", description = "Удаляет канал уведомлений из системы")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "204", description = "Канал удален"),
-        @ApiResponse(responseCode = "404", description = "Канал не найден")
-    })
-    public ResponseEntity<Void> deleteNotificationChannel(@Parameter(description = "ID канала") @PathVariable Long id) {
+    public ResponseEntity<Void> deleteNotificationChannel(@PathVariable Long id) {
         if (!notificationChannelRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
@@ -239,13 +194,7 @@ public class AlertController {
      * Test a notification channel
      */
     @PostMapping("/notifications/channels/{id}/test")
-    @Operation(summary = "Тестировать канал уведомлений", description = "Отправляет тестовое уведомление через выбранный канал")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Тестовое уведомление отправлено"),
-        @ApiResponse(responseCode = "404", description = "Канал не найден"),
-        @ApiResponse(responseCode = "500", description = "Ошибка отправки")
-    })
-    public ResponseEntity<String> testNotificationChannel(@Parameter(description = "ID канала") @PathVariable Long id) {
+    public ResponseEntity<String> testNotificationChannel(@PathVariable Long id) {
         Optional<NotificationChannel> channelOpt = notificationChannelRepository.findById(id);
         
         if (channelOpt.isEmpty()) {

@@ -8,11 +8,6 @@ import taxisty.pingtower.backend.api.dto.CheckCreateDto;
 import taxisty.pingtower.backend.api.dto.CheckDto;
 import taxisty.pingtower.backend.api.service.CheckService;
 import taxisty.pingtower.backend.api.service.IdempotencyService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 import java.net.URI;
@@ -20,7 +15,6 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/checks")
-@Tag(name = "Проверки", description = "API для управления мониторинговыми проверками")
 public class ChecksController {
     private final CheckService checkService;
     private final IdempotencyService idempotencyService;
@@ -31,13 +25,9 @@ public class ChecksController {
     }
 
     @GetMapping
-    @Operation(summary = "Получить список проверок", description = "Возвращает постраничный список мониторинговых проверок")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Проверки успешно получены")
-    })
     public Map<String, Object> list(
-            @Parameter(description = "Максимальное количество элементов для возврата") @RequestParam(name = "limit", required = false, defaultValue = "50") Integer limit,
-            @Parameter(description = "Курсор для пагинации") @RequestParam(name = "cursor", required = false) String cursor
+        @RequestParam(name = "limit", required = false, defaultValue = "50") Integer limit,
+        @RequestParam(name = "cursor", required = false) String cursor
     ) {
         int lm = Math.min(Math.max(limit == null ? 50 : limit, 1), 500);
         int offset = 0;
@@ -63,14 +53,8 @@ public class ChecksController {
     }
 
     @PostMapping
-    @Operation(summary = "Create check", description = "Create a new monitoring check with idempotency")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Check created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request or missing Idempotency-Key"),
-        @ApiResponse(responseCode = "409", description = "Idempotency conflict")
-    })
     public ResponseEntity<CheckDto> create(
-            @Parameter(description = "Idempotency key for request deduplication") @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
+        @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody CheckCreateDto body
     ) {
         if (!StringUtils.hasText(idempotencyKey)) {
