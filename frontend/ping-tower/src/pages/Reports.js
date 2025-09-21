@@ -53,10 +53,17 @@ function Reports() {
         fromDate.setMonth(now.getMonth() - 1);
       }
 
-      const response = await api(`/api/v1/monitoring/services/${selectedServiceId}/results?since=${fromDate.toISOString()}&size=1000`); // Updated endpoint and parameters
+      const response = await api(`/v1/api/monitoring/services/${selectedServiceId}/results?since=${fromDate.toISOString()}&size=1000`); // Fixed endpoint path
       if (response.ok) {
-        const data = await response.json();
-        setReportData(data.content || []); // Updated to data.content
+        try {
+          const data = await response.json();
+          setReportData(data.content || []); // Updated to data.content
+        } catch (jsonError) {
+          console.error('Failed to parse JSON response:', jsonError);
+          const responseText = await response.text();
+          console.error('Response was:', responseText.substring(0, 200));
+          setReportData([]);
+        }
       } else {
         const errorText = await response.text();
         console.error('Failed to fetch report data', response.status, errorText);
