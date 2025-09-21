@@ -37,6 +37,9 @@ public class UserService {
     @Autowired
     private JwtUtil jwtUtil;
     
+    @Autowired
+    private TelegramOnboardingService telegramOnboardingService;
+    
     /**
      * Register a new user
      */
@@ -53,6 +56,8 @@ public class UserService {
         user.setIsActive(true);
         
         user = userRepository.save(user);
+
+        telegramOnboardingService.prepareLink(user.getId(), user.getUsername());
         
         // Authenticate the user
         Authentication authentication = authenticationManager.authenticate(

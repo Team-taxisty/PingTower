@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # Все сервисы как обычно
+  postgres:
+    image: postgres:15-alpine
+    container_name: pingtower-postgres-dev
+    ports: ["5433:5432"]
+    environment:
+      POSTGRES_DB: monitoring
+      POSTGRES_USER: monitoring
+      POSTGRES_PASSWORD: dev123
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    networks:
+      - pingtower-network
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: pingtower-clickhouse-dev
+    ports: ["8123:8123"]
+    volumes:
+      - clickhouse_data_dev:/var/lib/clickhouse
+    networks:
+      - pingtower-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: pingtower-mailhog-dev
+    ports: 
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - pingtower-network
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: pingtower-backend-dev
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/monitoring
+      SPRING_DATASOURCE_USERNAME: monitoring
+      SPRING_DATASOURCE_PASSWORD: dev123
+      SPRING_MAIL_HOST: mailhog
+      SPRING_MAIL_PORT: 1025
+    depends_on:
+      - postgres
+      - clickhouse
+      - mailhog
+    networks:
+      - pingtower-network
+
+  # FRONTEND С HOT RELOAD - главное отличие!
+  frontend:
+    build:
+      context: ../frontend/ping-tower
+      dockerfile: Dockerfile.dev
+    container_name: pingtower-frontend-dev
+    ports:
+      - "3000:3000"  # React dev server
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      # Подключить исходники напрямую - БЕЗ ПЕРЕСБОРКИ!
+      - ../frontend/ping-tower/src:/app/src
+      - ../frontend/ping-tower/public:/app/public
+      # НЕ подключаем node_modules (оставляем в контейнере)
+      - /app/node_modules
+    networks:
+      - pingtower-network
+
+  # Nginx для удобства
+  nginx:
+    image: nginx:alpine
+    container_name: pingtower-nginx-dev
+    ports: 
+      - "80:80"
+    volumes:
+      - ./nginx/nginx-dev.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - pingtower-network
+
+volumes:
+  postgres_data_dev:
+  clickhouse_data_dev:
+
+networks:
+  pingtower-network:
+    driver: bridge

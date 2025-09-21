@@ -1,0 +1,20 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Установить зависимости
+COPY package.json package-lock.json ./
+RUN npm install
+
+# Скопировать код (будет переопределен volumes)
+COPY . .
+
+# Настройки для hot reload
+ENV CHOKIDAR_USEPOLLING=true
+ENV WATCHPACK_POLLING=true
+ENV FAST_REFRESH=true
+
+EXPOSE 3000
+
+# Запустить dev server
+CMD ["npm", "start"]

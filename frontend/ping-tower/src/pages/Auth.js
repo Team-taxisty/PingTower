@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import api from '../utils/api';
 
 function Auth({ onAuthSuccess }) {
@@ -14,22 +14,22 @@ function Auth({ onAuthSuccess }) {
     const newErrors = {};
     if (!isLogin) {
       if (!name.trim()) {
-        newErrors.name = 'Имя пользователя обязательно';
+        newErrors.name = 'РРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ';
       } else if (name.trim().length < 3) {
-        newErrors.name = 'Имя пользователя должно быть не менее 3 символов';
+        newErrors.name = 'РРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ РЅРµ РјРµРЅРµРµ 3 СЃРёРјРІРѕР»РѕРІ';
       } else if (name.trim().length > 50) {
-        newErrors.name = 'Имя пользователя должно быть не более 50 символов';
+        newErrors.name = 'РРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ РЅРµ Р±РѕР»РµРµ 50 СЃРёРјРІРѕР»РѕРІ';
       }
     }
     if (!email.trim()) {
-      newErrors.email = 'Email обязателен';
+      newErrors.email = 'Email РѕР±СЏР·Р°С‚РµР»РµРЅ';
     } else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
-      newErrors.email = 'Неверный формат Email';
+      newErrors.email = 'РќРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚ Email';
     }
     if (!password.trim()) {
-      newErrors.password = 'Пароль обязателен';
+      newErrors.password = 'РџР°СЂРѕР»СЊ РѕР±СЏР·Р°С‚РµР»РµРЅ';
     } else if (password.length < 6) {
-      newErrors.password = 'Пароль должен быть не менее 6 символов';
+      newErrors.password = 'РџР°СЂРѕР»СЊ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РЅРµ РјРµРЅРµРµ 6 СЃРёРјРІРѕР»РѕРІ';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -64,19 +64,37 @@ function Auth({ onAuthSuccess }) {
         const data = await response.json();
 
         if (response.ok) {
-          setMessage({ type: 'success', text: isLogin ? 'Вход выполнен успешно!' : 'Регистрация прошла успешно!' });
           // Save JWT token and user details
           localStorage.setItem('jwtToken', data.token);
           localStorage.setItem('userId', data.id);
           localStorage.setItem('username', data.username);
           localStorage.setItem('email', data.email);
+
+          let successMessage = isLogin ? 'Login successful!' : 'Registration completed!';
+
+          if (!isLogin && data.id) {
+            const telegramLink = 'https://t.me/PingTower_tax_bot?start=' + data.id;
+
+            try {
+              const popup = window.open(telegramLink, '_blank', 'noopener,noreferrer');
+              if (!popup) {
+                console.warn('Telegram link popup was blocked by the browser.');
+              }
+            } catch (openError) {
+              console.warn('Failed to open Telegram link automatically', openError);
+            }
+
+            successMessage += ' Open Telegram: ' + telegramLink;
+          }
+
+          setMessage({ type: 'success', text: successMessage });
           onAuthSuccess();
         } else {
-          setMessage({ type: 'error', text: data.message || 'Произошла ошибка авторизации.' });
+          setMessage({ type: 'error', text: data.message || 'РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР° Р°РІС‚РѕСЂРёР·Р°С†РёРё.' });
         }
       } catch (error) {
         console.error('API Error:', error);
-        setMessage({ type: 'error', text: 'Произошла ошибка. Пожалуйста, попробуйте снова.' });
+        setMessage({ type: 'error', text: 'РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР°. РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РїРѕРїСЂРѕР±СѓР№С‚Рµ СЃРЅРѕРІР°.' });
       } finally {
         setIsLoading(false);
       }
@@ -157,11 +175,11 @@ function Auth({ onAuthSuccess }) {
 
   return (
     <div style={formContainerStyle}>
-      <h2 style={titleStyle}>{isLogin ? 'Вход' : 'Регистрация'}</h2>
+      <h2 style={titleStyle}>{isLogin ? 'Р’С…РѕРґ' : 'Р РµРіРёСЃС‚СЂР°С†РёСЏ'}</h2>
       <form onSubmit={handleSubmit}>
         {!isLogin && (
           <div style={formGroupStyle}>
-            <label htmlFor="name" style={labelStyle}>Имя пользователя</label>
+            <label htmlFor="name" style={labelStyle}>РРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ</label>
             <input
               type="text"
               id="name"
@@ -186,7 +204,7 @@ function Auth({ onAuthSuccess }) {
           {errors.email && <p style={errorTextStyle}>{errors.email}</p>}
         </div>
         <div style={formGroupStyle}>
-          <label htmlFor="password" style={labelStyle}>Пароль</label>
+          <label htmlFor="password" style={labelStyle}>РџР°СЂРѕР»СЊ</label>
           <input
             type="password"
             id="password"
@@ -202,10 +220,10 @@ function Auth({ onAuthSuccess }) {
             {message.text}
           </p>
         )}
-        <button type="submit" style={buttonStyle} disabled={isLoading}>{isLogin ? (isLoading ? 'Вход...' : 'Войти') : (isLoading ? 'Регистрация...' : 'Зарегистрироваться')}</button>
+        <button type="submit" style={buttonStyle} disabled={isLoading}>{isLogin ? (isLoading ? 'Р’С…РѕРґ...' : 'Р’РѕР№С‚Рё') : (isLoading ? 'Р РµРіРёСЃС‚СЂР°С†РёСЏ...' : 'Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊСЃСЏ')}</button>
       </form>
       <button onClick={handleToggle} style={toggleButtonStyle} disabled={isLoading}>
-        {isLogin ? 'Нет аккаунта? Зарегистрируйтесь' : 'Уже есть аккаунт? Войдите'}
+        {isLogin ? 'РќРµС‚ Р°РєРєР°СѓРЅС‚Р°? Р—Р°СЂРµРіРёСЃС‚СЂРёСЂСѓР№С‚РµСЃСЊ' : 'РЈР¶Рµ РµСЃС‚СЊ Р°РєРєР°СѓРЅС‚? Р’РѕР№РґРёС‚Рµ'}
       </button>
     </div>
   );

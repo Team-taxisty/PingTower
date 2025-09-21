@@ -37,6 +37,9 @@ pingtower:
     default-timeout-seconds: 30
     auto-start: true
 
+  telegram:
+    bot-service-url: http://localhost:5000
+
 # JWT Configuration
 jwt:
   secret: pingtower-secret-key-for-jwt-tokens-in-hackathon
