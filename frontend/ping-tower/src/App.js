@@ -193,12 +193,12 @@ function App() {
               <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{services.length}</div>
             </div>
             <div style={{ background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' }}>
-              <div style={{ fontSize: 12, color: '#6D0475', fontWeight: 600, marginBottom: 8 }}>Активные</div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: '#10b981' }}>{services.filter(s => s.enabled).length}</div>
+              <div style={{ fontSize: 12, color: '#6D0475', fontWeight: 600, marginBottom: 8 }}>Работают</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#10b981' }}>{services.filter(s => s.status === 'UP').length}</div>
             </div>
             <div style={{ background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' }}>
-              <div style={{ fontSize: 12, color: '#6D0475', fontWeight: 600, marginBottom: 8 }}>Неактивные</div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: '#ef4444' }}>{services.filter(s => !s.enabled).length}</div>
+              <div style={{ fontSize: 12, color: '#6D0475', fontWeight: 600, marginBottom: 8 }}>Не работают</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#ef4444' }}>{services.filter(s => s.status === 'DOWN' || s.status === 'DEGRADED' || s.status === 'UNKNOWN' || s.status === 'ERROR').length}</div>
             </div>
             <div style={{ background: '#ffffff', border: '1px solid #E5B8E8', borderRadius: 12, padding: 20, boxShadow: '0 2px 4px rgba(109, 4, 117, 0.1)' }}>
               <div style={{ fontSize: 12, color: '#6D0475', fontWeight: 600, marginBottom: 8 }}>Статус</div>
