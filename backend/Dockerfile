@@ -17,8 +17,9 @@ RUN gradle build -x test --no-daemon
 # Production stage
 FROM eclipse-temurin:21-jre-alpine
 
-# Установка необходимых пакетов
-RUN apk add --no-cache wget
+# Установка необходимых пакетов (включая корневые сертификаты для HTTPS)
+RUN apk add --no-cache wget ca-certificates curl \
+    && update-ca-certificates
 
 # Создание пользователя для безопасности
 RUN addgroup -g 1000 pingtower && adduser -D -s /bin/sh -u 1000 -G pingtower pingtower
